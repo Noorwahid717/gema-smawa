@@ -86,6 +86,9 @@ Tombol Live Classroom sudah ditambahkan di:
 - Signaling channel untuk koordinasi
 - Edge runtime untuk performa optimal
 - Support multiple rooms
+- State ringan disimpan di memori Edge (`room -> peers`) dengan informasi `peerId` dan `role`
+- Pesan `join` akan mengirim daftar peserta yang sudah ada, `joined/left` menyiarkan jumlah peserta terkini
+- Payload WebRTC (`offer`, `answer`, `ice`) dibungkus sebagai event `peer` sehingga klien cukup memfilter berdasarkan `payload.target`
 
 ### **MediaRecorder API**
 - Recording sesi di browser host
@@ -146,6 +149,35 @@ npm run dev
 1. Check Cloudinary credentials di `.env`
 2. Pastikan disk space cukup
 3. Check browser support MediaRecorder API
+
+---
+
+## ✅ Pengujian & Kriteria Penerimaan
+
+1. **Jalankan pengembangan lokal**
+   - `npm install` (sekali jika belum).
+   - `npm run dev` dan pastikan server berjalan di `http://localhost:3000`.
+   - Perhatikan terminal, setiap koneksi WebSocket akan mencetak log `[WS]`.
+2. **Verifikasi handshake WebSocket**
+   - Buka `http://localhost:3000/admin/login` dan mulai sesi live di `/classroom/<ID>/live`.
+   - Di DevTools tab *Network → WS* pastikan request `ws://localhost:3000/api/ws` menerima status `101 Switching Protocols`.
+   - Di console browser harus muncul pesan `Terhubung ke server signaling...` tanpa error.
+3. **Uji koneksi siswa & relay sinyal**
+   - Di tab/inkognito lain login sebagai siswa lalu join halaman live yang sama.
+   - Pastikan jumlah penonton bertambah dan stream host muncul pada sisi siswa.
+   - Periksa Network WS bahwa frame bertipe `peer` membawa payload `offer`, `answer`, dan `ice` dan `payload.target` sesuai dengan ID lawan bicara.
+4. **Simulasi auto-reconnect**
+   - Saat kedua sisi terhubung, hentikan server (`Ctrl+C`) atau aktifkan *Offline* di DevTools untuk beberapa detik.
+   - UI akan menampilkan pesan `Koneksi signaling terputus...` dan mencoba kembali dengan jeda bertambah hingga 30 detik.
+   - Hidupkan kembali koneksi/server dan pastikan status berubah menjadi `Terhubung` tanpa perlu refresh.
+5. **Heartbeat & kestabilan**
+   - Biarkan koneksi terbuka >1 menit; server akan mengirim `ping` dan klien merespons `pong` (cek tab WS → Frames).
+   - Pastikan koneksi tidak ditutup selama heartbeat diterima.
+6. **Produksi**
+   - Deploy ke Vercel lalu ulangi langkah 2–5 menggunakan `https://` (klien otomatis memakai `wss://`).
+   - Pastikan tidak ada dependency `ws` pada server dan route `app/api/ws/route.ts` berjalan di Edge (cek log Vercel).
+
+Kriteria dianggap terpenuhi ketika seluruh langkah di atas sukses tanpa error pada konsol browser maupun terminal server.
 
 ---
 
