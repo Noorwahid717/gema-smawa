@@ -65,32 +65,60 @@ type VideoPreviewProps = {
   placeholder?: string
 }
 
-const FALLBACK_STUN = ['stun:stun.l.google.com:19302']
+const FALLBACK_STUN = [
+  'stun:stun.l.google.com:19302',
+  'stun:stun1.l.google.com:19302',
+  'stun:stun2.l.google.com:19302',
+  'stun:stun3.l.google.com:19302'
+]
+
+function sanitizeStunEnv(rawValue: string): string {
+  const trimmed = rawValue.trim()
+  if (!trimmed.length) {
+    return trimmed
+  }
+
+  const withoutWrappingQuotes = trimmed.replace(/^['"]|['"]$/g, '')
+  return withoutWrappingQuotes
+}
 
 function resolveIceServers(): RTCIceServer[] {
   const servers: RTCIceServer[] = []
-  const stunEnv = process.env.NEXT_PUBLIC_STUN_URLS
+  const stunEnvRaw = process.env.NEXT_PUBLIC_STUN_URLS
+  const resolvedStunUrls: string[] = []
 
-  if (stunEnv) {
+  if (stunEnvRaw) {
     try {
-      const parsed = JSON.parse(stunEnv)
-      if (Array.isArray(parsed) && parsed.length) {
-        servers.push({ urls: parsed })
+      const sanitized = sanitizeStunEnv(stunEnvRaw)
+      const parsed = JSON.parse(sanitized)
+      const stunList = Array.isArray(parsed) ? parsed : [parsed]
+      const validStun = stunList.filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
+
+      if (validStun.length) {
+        resolvedStunUrls.push(...validStun)
+        console.log('✅ Using STUN servers from env', validStun)
       }
     } catch (error) {
-      console.warn('Failed to parse NEXT_PUBLIC_STUN_URLS', error)
+      console.warn('⚠️ Failed to parse NEXT_PUBLIC_STUN_URLS', {
+        error,
+        value: stunEnvRaw
+      })
     }
   }
 
-  if (!servers.length) {
-    servers.push({ urls: FALLBACK_STUN })
+  if (!resolvedStunUrls.length) {
+    resolvedStunUrls.push(...FALLBACK_STUN)
+    console.log('ℹ️ Using fallback STUN servers', FALLBACK_STUN)
   }
+
+  servers.push({ urls: resolvedStunUrls })
 
   const turnUrl = process.env.NEXT_PUBLIC_TURN_URL
   const turnUsername = process.env.NEXT_PUBLIC_TURN_USERNAME
   const turnPassword = process.env.NEXT_PUBLIC_TURN_PASSWORD
 
   if (turnUrl && turnUsername && turnPassword) {
+    console.log('✅ TURN server configuration detected')
     servers.push({
       urls: turnUrl,
       username: turnUsername,
@@ -98,6 +126,7 @@ function resolveIceServers(): RTCIceServer[] {
     })
   }
 
+  console.log('🎯 Resolved ICE servers', servers)
   return servers
 }
 export default function LiveClassroomPage() {

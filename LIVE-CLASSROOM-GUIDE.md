@@ -155,7 +155,10 @@ File `.env` sudah dikonfigurasi dengan:
 
 ```env
 # Live Classroom - WebRTC Configuration
-NEXT_PUBLIC_STUN_URLS='["stun:stun.l.google.com:19302"]'
+# Format harus JSON array TANPA kutip tunggal pembungkus
+# ✅ Contoh benar: ["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"]
+# ❌ Contoh salah: ' ["stun:stun.l.google.com:19302"] '
+NEXT_PUBLIC_STUN_URLS=["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302","stun:stun2.l.google.com:19302"]
 NEXT_PUBLIC_TURN_URL=
 NEXT_PUBLIC_TURN_USERNAME=
 NEXT_PUBLIC_TURN_PASSWORD=
@@ -165,6 +168,14 @@ CLOUDINARY_CLOUD_NAME=ekioswa
 CLOUDINARY_API_KEY=394934877538616
 CLOUDINARY_API_SECRET=ikvjoynzSO843HMtpkWs1GR100E
 ```
+
+Untuk memverifikasi format JSON, jalankan perintah berikut sebelum deploy:
+
+```bash
+echo $NEXT_PUBLIC_STUN_URLS | jq empty
+```
+
+Jika perintah di atas menampilkan error, periksa kembali format variabel dan pastikan tidak ada kutip tambahan di awal/akhir string.
 
 ---
 
