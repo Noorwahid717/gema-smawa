@@ -153,70 +153,105 @@ function send(socket: WebSocket, payload: OutgoingMessage) {
 }
 
 export function GET(request: NextRequest) {
-  if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') {
-    return new Response('Expected websocket', { status: 400 })
-  }
+  const requestId = crypto.randomUUID()
 
-  const { WebSocketPair } = globalThis as unknown as {
-    WebSocketPair: new () => { 0: WebSocket; 1: WebSocket }
-  }
-  const pair = new WebSocketPair()
-  const client = pair[0]
-  const server = pair[1] as WebSocket & { accept: () => void }
+  try {
+    const upgradeHeader = request.headers.get('upgrade')?.toLowerCase()
+    if (upgradeHeader !== 'websocket') {
+      console.warn('[WS] Invalid upgrade header', { requestId, upgradeHeader })
+      return new Response('Expected websocket', { status: 400 })
+    }
 
-  const peerState: {
-    roomId: string | null
-    clientId: string | null
-  } = {
-    roomId: null,
-    clientId: null
-  }
+    const { WebSocketPair } = globalThis as unknown as {
+      WebSocketPair?: new () => { 0: WebSocket; 1: WebSocket }
+    }
 
-  server.accept()
+    if (typeof WebSocketPair === 'undefined') {
+      console.error('[WS] WebSocketPair not supported in this environment', { requestId })
+      return new Response('WebSocket not supported', { status: 500 })
+    }
 
-  server.addEventListener('message', (event) => {
-    try {
-      const data = JSON.parse(event.data as string) as IncomingMessage
-      if (data.type === 'join') {
-        handleJoin(server, data, peerState)
+    const pair = new WebSocketPair()
+    const client = pair[0]
+    const server = pair[1] as WebSocket & { accept: () => void }
+
+    console.log('[WS] Incoming connection', {
+      requestId,
+      url: request.url
+    })
+
+    const peerState: {
+      roomId: string | null
+      clientId: string | null
+    } = {
+      roomId: null,
+      clientId: null
+    }
+
+    server.accept()
+
+    server.addEventListener('message', (event) => {
+      try {
+        const data = JSON.parse(event.data as string) as IncomingMessage
+        if (data.type === 'join') {
+          handleJoin(server, data, peerState, requestId)
+          return
+        }
+
+        if (!peerState.roomId || !peerState.clientId) {
+          send(server, { type: 'error', message: 'Join a room before sending signals' })
+          return
+        }
+
+        handleSignal(server, data, peerState as { roomId: string; clientId: string }, requestId)
+      } catch (error) {
+        console.error('[WS] Failed to parse message', { requestId, error })
+        send(server, { type: 'error', message: 'Invalid message payload' })
+      }
+    })
+
+    const close = (event?: CloseEvent | Event) => {
+      const { roomId, clientId } = peerState
+      if (!roomId || !clientId) {
         return
       }
 
-      if (!peerState.roomId || !peerState.clientId) {
-        send(server, { type: 'error', message: 'Join a room before sending signals' })
-        return
+      const peer = store.removePeer(roomId, clientId)
+      if (peer) {
+        broadcast(roomId, { type: 'peer-left', clientId: peer.id }, peer.id)
       }
 
-      handleSignal(server, data, peerState as { roomId: string; clientId: string })
-    } catch (error) {
-      console.error('Failed to parse message', error)
-      send(server, { type: 'error', message: 'Invalid message payload' })
-    }
-  })
+      console.log('[WS] Connection closed', {
+        requestId,
+        roomId,
+        clientId,
+        reason: event instanceof CloseEvent ? event.reason : undefined
+      })
 
-  const close = () => {
-    const { roomId, clientId } = peerState
-    if (!roomId || !clientId) {
-      return
+      peerState.roomId = null
+      peerState.clientId = null
     }
 
-    const peer = store.removePeer(roomId, clientId)
-    if (peer) {
-      broadcast(roomId, { type: 'peer-left', clientId: peer.id }, peer.id)
-    }
+    server.addEventListener('close', close)
+    server.addEventListener('error', (event) => {
+      console.error('[WS] Server error', { requestId, event })
+      close(event)
+    })
 
-    peerState.roomId = null
-    peerState.clientId = null
+    const responseInit: WebSocketResponseInit = { status: 101, webSocket: client }
+    return new Response(null, responseInit)
+  } catch (error) {
+    console.error('[WS] Unexpected error during handshake', { requestId, error })
+    return new Response('Failed to establish websocket connection', { status: 500 })
   }
-
-  server.addEventListener('close', close)
-  server.addEventListener('error', close)
-
-  const responseInit: WebSocketResponseInit = { status: 101, webSocket: client }
-  return new Response(null, responseInit)
 }
 
-function handleJoin(socket: WebSocket, data: JoinMessage, state: { roomId: string | null; clientId: string | null }) {
+function handleJoin(
+  socket: WebSocket,
+  data: JoinMessage,
+  state: { roomId: string | null; clientId: string | null },
+  requestId?: string
+) {
   const { roomId, clientId, role } = data
 
   if (!roomId || !clientId || !role) {
@@ -225,6 +260,7 @@ function handleJoin(socket: WebSocket, data: JoinMessage, state: { roomId: strin
   }
 
   if (role === 'host' && store.hasHost(roomId)) {
+    console.warn('[WS] Host already connected', { requestId, roomId })
     send(socket, { type: 'error', message: 'Host already connected' })
     socket.close()
     return
@@ -237,6 +273,14 @@ function handleJoin(socket: WebSocket, data: JoinMessage, state: { roomId: strin
     id: clientId,
     role,
     socket
+  })
+
+  console.log('[WS] Peer joined', {
+    requestId,
+    roomId,
+    clientId,
+    role,
+    peerCount: store.listPeers(roomId).length
   })
 
   const peers = store.listPeers(roomId).map((peer) => ({
@@ -254,12 +298,18 @@ function handleJoin(socket: WebSocket, data: JoinMessage, state: { roomId: strin
   broadcast(roomId, { type: 'peer-joined', clientId, role }, clientId)
 }
 
-function handleSignal(socket: WebSocket, data: IncomingMessage, state: { roomId: string; clientId: string }) {
+function handleSignal(
+  socket: WebSocket,
+  data: IncomingMessage,
+  state: { roomId: string; clientId: string },
+  requestId?: string
+) {
   const roomId = state.roomId
   const senderId = state.clientId
   const sender = store.getPeer(roomId, senderId)
 
   if (!sender) {
+    console.warn('[WS] Sender not registered in room', { requestId, roomId, senderId })
     send(socket, { type: 'error', message: 'Sender not registered in room' })
     return
   }
@@ -273,6 +323,7 @@ function handleSignal(socket: WebSocket, data: IncomingMessage, state: { roomId:
 
       const target = store.getPeer(roomId, data.target)
       if (!target) {
+        console.warn('[WS] Target peer not found for offer', { requestId, roomId, targetId: data.target })
         send(socket, { type: 'error', message: 'Target peer not found' })
         return
       }
@@ -293,6 +344,7 @@ function handleSignal(socket: WebSocket, data: IncomingMessage, state: { roomId:
 
       const target = store.getPeer(roomId, data.target)
       if (!target) {
+        console.warn('[WS] Host not found for answer', { requestId, roomId, targetId: data.target })
         send(socket, { type: 'error', message: 'Host not found for answer' })
         return
       }
@@ -308,6 +360,7 @@ function handleSignal(socket: WebSocket, data: IncomingMessage, state: { roomId:
     case 'ice': {
       const target = store.getPeer(roomId, data.target)
       if (!target) {
+        console.warn('[WS] Peer not found for ICE candidate', { requestId, roomId, targetId: data.target })
         send(socket, { type: 'error', message: 'Peer not found for ICE candidate' })
         return
       }
