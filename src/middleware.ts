@@ -1,95 +1,175 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
-
-// Helper untuk logging yang lebih informatif
-function log(message: string, data?: object) {
-  console.log(`[GEMA-MIDDLEWARE] ${message}`, data ? JSON.stringify(data, null, 2) : '')
-}
+import type { NextRequest } from 'next/server'
 
 export default withAuth(
-  // Fungsi ini hanya berjalan jika `withAuth` menemukan token yang valid.
-  // Jika tidak ada token, `withAuth` akan otomatis redirect ke halaman login.
   function middleware(req) {
     const { pathname } = req.nextUrl
     const token = req.nextauth.token
 
-    log('Request received', { path: pathname, tokenExists: !!token })
-
+    console.log('\n=========================================')
+    console.log('🔐 MIDDLEWARE EXECUTION')
+    console.log('=========================================')
+    console.log('📍 Path:', pathname)
+    console.log('🎫 Token exists:', !!token)
+    
     if (token) {
-      log('Token details', {
-        role: token.role,
-        userType: token.userType,
-        name: token.name,
-        email: token.email,
-      })
+      console.log('📋 Token details:')
+      console.log('   - ID:', token.id)
+      console.log('   - Email:', token.email)
+      console.log('   - Role:', token.role)
+      console.log('   - User Type:', token.userType)
+      console.log('   - Sub:', token.sub)
+    } else {
+      console.log('❌ No token found')
     }
+    console.log('=========================================')
 
-    const userRole = typeof token?.role === 'string' ? token.role.toUpperCase() : ''
-    const userType = token?.userType
-    const isAdminRoute = pathname.startsWith('/admin')
+    // Proteksi route admin (kecuali halaman login)
+    if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+      console.log('🛡️ Admin route protection check')
+      
+      const userRole = typeof token?.role === 'string' ? token.role.toUpperCase() : ''
+      const userType = typeof token?.userType === 'string' ? token.userType : undefined
 
-    // 1. Logika untuk rute Admin
-    if (isAdminRoute) {
-      const hasAdminRole = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
-      const hasAdminType = userType === 'admin'
+      console.log('   Checking credentials:')
+      console.log('   - User Role:', userRole)
+      console.log('   - User Type:', userType)
+      console.log('   - Is Admin Role?', userRole === 'SUPER_ADMIN' || userRole === 'ADMIN')
+      console.log('   - Is Admin Type?', userType === 'admin')
 
-      // Jika pengguna mencoba mengakses rute admin tetapi tidak memiliki role/tipe yang sesuai
-      if (!hasAdminRole || !hasAdminType) {
-        log('Authorization failed for admin route. Redirecting to login.', {
-          path: pathname,
-          userRole,
-          userType,
-        })
-        // Redirect ke halaman login dengan pesan error
+      // Jika tidak ada token, redirect ke login dengan callback
+      if (!token) {
+        console.log('❌ NO TOKEN - Redirecting to login')
+        console.log('=========================================')
         const loginUrl = new URL('/admin/login', req.url)
-        loginUrl.searchParams.set('error', 'AccessDenied')
+        loginUrl.searchParams.set('callbackUrl', req.url)
         return NextResponse.redirect(loginUrl)
       }
 
-      // Jika pengguna admin yang sudah login mencoba mengakses halaman login,
-      // arahkan ke dashboard.
-      if (pathname === '/admin/login') {
-        log('Admin already logged in. Redirecting to dashboard.', { user: token?.name })
-        return NextResponse.redirect(new URL('/admin/dashboard', req.url))
+      // Validasi role & tipe user untuk akses admin
+      const hasValidRole = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
+      const hasValidType = userType === 'admin'
+      
+      if (!hasValidRole || !hasValidType) {
+        console.log('❌ INVALID CREDENTIALS - Redirecting to login')
+        console.log('   Reason:')
+        if (!hasValidRole) console.log('   - Invalid role:', token?.role, '(expected: ADMIN or SUPER_ADMIN)')
+        if (!hasValidType) console.log('   - Invalid user type:', token?.userType, '(expected: admin)')
+        console.log('=========================================')
+        return NextResponse.redirect(new URL('/admin/login', req.url))
       }
 
-      log('Admin access granted.', { path: pathname, user: token?.name })
+      console.log('✅ ADMIN ACCESS GRANTED')
+      console.log('=========================================')
     }
 
-    // 2. Logika untuk rute Student (jika ada proteksi khusus di masa depan)
+    // Semua route student bypass NextAuth (custom auth sendiri)
     if (pathname.startsWith('/student')) {
-      // Saat ini, rute student bersifat publik atau memiliki mekanisme auth sendiri.
-      // Biarkan request berlanjut.
-      log('Student route access. Passing through.', { path: pathname })
+      console.log('Middleware - Student route access allowed (custom auth)')
       return NextResponse.next()
     }
 
-    // Jika semua pengecekan lolos, lanjutkan request
-    return NextResponse.next()
+    // Jika user admin sudah login dan mengakses /admin/login, arahkan ke dashboard
+    if (pathname === '/admin/login' && token) {
+      console.log('🔄 Admin login page accessed with token')
+      const userRole = typeof token?.role === 'string' ? token.role.toUpperCase() : ''
+      const isAdmin = (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && token.userType === 'admin'
+
+      console.log('   Is authenticated admin?', isAdmin)
+      
+      if (isAdmin) {
+        console.log('✅ Admin already logged in, redirecting to dashboard')
+        console.log('=========================================')
+        return NextResponse.redirect(new URL('/admin/dashboard', req.url))
+      }
+    }
+
+    console.log('✅ Middleware passed - Proceeding to route')
+    console.log('=========================================\n')
+    
+    // Tidak ada auto-redirect untuk student login/register (pakai session management custom)
   },
   {
-    // Konfigurasi ini memberitahu `withAuth` halaman mana yang harus di-redirect
-    // jika token tidak ditemukan.
-    pages: {
-      signIn: '/admin/login',
-      error: '/admin/login', // Halaman untuk menampilkan error (misal: Access Denied)
+    callbacks: {
+      authorized: ({ token, req }) => {
+        const { pathname } = req.nextUrl
+
+        console.log('\n=========================================')
+        console.log('🔓 AUTHORIZED CALLBACK')
+        console.log('=========================================')
+        console.log('📍 Path:', pathname)
+        console.log('🎫 Token exists:', !!token)
+        
+        if (token) {
+          console.log('📋 Token in authorized:')
+          console.log('   - ID:', token.id)
+          console.log('   - Role:', token.role)
+          console.log('   - User Type:', token.userType)
+        }
+
+        // Selalu izinkan halaman login/register
+        if (
+          pathname === '/admin/login' ||
+          pathname === '/student/login' ||
+          pathname === '/student/register'
+        ) {
+          console.log('✅ Login/Register page - ALLOWED')
+          console.log('=========================================\n')
+          return true
+        }
+
+        // Semua route student diizinkan (auth custom)
+        if (pathname.startsWith('/student')) {
+          console.log('✅ Student route - ALLOWED (custom auth)')
+          console.log('=========================================\n')
+          return true
+        }
+
+        // Route admin butuh token valid + role & tipe yang sesuai
+        if (pathname.startsWith('/admin')) {
+          console.log('🛡️ Admin route authorization check')
+          
+          if (!token) {
+            console.log('❌ No token - DENIED')
+            console.log('=========================================\n')
+            return false
+          }
+          
+          const userRole = typeof token?.role === 'string' ? token.role.toUpperCase() : ''
+          const hasValidRole = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
+          const hasValidType = token?.userType === 'admin'
+          
+          console.log('   Validation results:')
+          console.log('   - Has token:', !!token)
+          console.log('   - Has valid role:', hasValidRole, `(${userRole})`)
+          console.log('   - Has valid type:', hasValidType, `(${token?.userType})`)
+          
+          const isAuthorized = !!token && hasValidRole && hasValidType
+          
+          if (isAuthorized) {
+            console.log('✅ Admin authorized - ALLOWED')
+          } else {
+            console.log('❌ Admin not authorized - DENIED')
+            console.log('   Missing requirements:')
+            if (!hasValidRole) console.log('   - Valid admin role')
+            if (!hasValidType) console.log('   - Admin user type')
+          }
+          
+          console.log('=========================================\n')
+          return isAuthorized
+        }
+
+        // Public routes
+        console.log('✅ Public route - ALLOWED')
+        console.log('=========================================\n')
+        return true
+      },
     },
   }
 )
 
-// Konfigurasi matcher:
-// Middleware ini akan berjalan untuk SEMUA rute yang cocok.
-// Logika di dalam middleware akan menentukan proteksi berdasarkan path.
 export const config = {
-  matcher: [
-    /*
-     * Cocokkan semua path, kecuali:
-     * - /api (API routes)
-     * - /_next/static (static files)
-     * - /_next/image (image optimization files)
-     * - /favicon.ico (favicon file)
-     * - /gema.svg, /file.svg, etc. (public assets)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|gema.svg|file.svg|globe.svg|next.svg|vercel.svg|window.svg|videos/.*).*)',
-  ],
+  // Lindungi semua route admin kecuali halaman login itu sendiri
+  matcher: ['/admin/:path*'],
 }

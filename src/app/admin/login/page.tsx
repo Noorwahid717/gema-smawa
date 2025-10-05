@@ -29,7 +29,14 @@ export default function AdminLogin() {
     setLoadingMessage('Memverifikasi kredensial...')
 
     try {
-      console.log('Attempting login with email:', email)
+      console.log('\n=========================================')
+      console.log('🔐 ADMIN LOGIN ATTEMPT')
+      console.log('=========================================')
+      console.log('📧 Email:', email)
+      console.log('🌐 Current URL:', window.location.href)
+      console.log('🎯 Target callback:', '/admin/dashboard')
+      console.log('⏰ Timestamp:', new Date().toISOString())
+      console.log('=========================================')
       
       // Show loading feedback
       setToast({
@@ -46,10 +53,17 @@ export default function AdminLogin() {
         callbackUrl: '/admin/dashboard'
       })
 
-      console.log('Login result:', result)
+      console.log('\n=========================================')
+      console.log('📝 SIGNIN RESULT')
+      console.log('=========================================')
+      console.log('✅ OK:', result?.ok)
+      console.log('❌ Error:', result?.error)
+      console.log('📍 Status:', result?.status)
+      console.log('🔗 URL:', result?.url)
+      console.log('=========================================\n')
       
       if (result?.error) {
-        console.error('Login failed:', result.error)
+        console.error('❌ LOGIN FAILED:', result.error)
         setError('Email atau password salah. Silakan periksa kredensial Anda.')
         setToast({
           show: true,
@@ -59,7 +73,9 @@ export default function AdminLogin() {
         setIsLoading(false)
         setLoadingMessage('')
       } else if (result?.ok) {
-        console.log('Login successful, redirecting to dashboard...')
+        console.log('✅ LOGIN SUCCESSFUL!')
+        console.log('🔄 Preparing redirect to dashboard...')
+        
         setSuccess(true)
         setLoadingMessage('Login berhasil! Mengalihkan ke dashboard...')
         setToast({
@@ -68,13 +84,14 @@ export default function AdminLogin() {
           type: 'success'
         })
         
-        // Manual redirect to dashboard
+        // Manual redirect to dashboard with delay for user feedback
         setTimeout(() => {
-          console.log('Redirecting to dashboard...')
+          console.log('🚀 Executing redirect to /admin/dashboard')
+          console.log('🔗 Full URL:', window.location.origin + '/admin/dashboard')
           window.location.href = '/admin/dashboard'
         }, 1500)
       } else {
-        console.error('Unexpected login result:', result)
+        console.error('⚠️ UNEXPECTED LOGIN RESULT:', result)
         setError('Login gagal. Silakan coba lagi.')
         setToast({
           show: true,
@@ -86,7 +103,11 @@ export default function AdminLogin() {
       }
       
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('❌ LOGIN ERROR:', error)
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
       setError('Terjadi kesalahan saat login. Silakan coba lagi.')
       setToast({
         show: true,
