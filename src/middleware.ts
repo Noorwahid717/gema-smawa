@@ -44,9 +44,14 @@ export default withAuth(
     }
 
     // Jika user admin sudah login dan mengakses /admin/login, arahkan ke dashboard
-    if (pathname === '/admin/login' && token && token.userType === 'admin') {
-      console.log('Middleware - Admin already logged in, redirecting to admin dashboard')
-      return NextResponse.redirect(new URL('/admin/dashboard', req.url))
+    if (pathname === '/admin/login' && token) {
+      const userRole = typeof token?.role === 'string' ? token.role.toUpperCase() : ''
+      const isAdmin = (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && token.userType === 'admin'
+
+      if (isAdmin) {
+        console.log('Middleware - Admin already logged in, redirecting to admin dashboard')
+        return NextResponse.redirect(new URL('/admin/dashboard', req.url))
+      }
     }
 
     // Tidak ada auto-redirect untuk student login/register (pakai session management custom)
@@ -58,6 +63,11 @@ export default withAuth(
 
         console.log('Middleware authorized callback - Path:', pathname)
         console.log('Middleware authorized callback - Token exists:', !!token)
+
+        // Izinkan akses jika token ada dan mencoba mengakses dashboard admin
+        if (token && pathname === '/admin/dashboard') {
+          return true
+        }
 
         // Selalu izinkan halaman login/register
         if (
@@ -97,6 +107,6 @@ export default withAuth(
 )
 
 export const config = {
-  // Hanya lindungi route admin, biarkan /classroom atau lainnya mengatur auth sendiri
+  // Lindungi semua route admin kecuali halaman login itu sendiri
   matcher: ['/admin/:path*'],
 }
