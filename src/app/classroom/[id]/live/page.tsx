@@ -55,6 +55,10 @@ type ServerMessage =
       type: 'error'
       message: string
     }
+  | {
+      type: 'ping'
+      timestamp?: number
+    }
 
 type ConnectionStatus = 'idle' | 'initializing' | 'connecting' | 'connected' | 'error'
 
@@ -237,6 +241,11 @@ function LiveRoom({
   )
   const clientIdRef = useRef(clientId)
   const wsRef = useRef<WebSocket | null>(null)
+  const reconnectAttemptsRef = useRef(0)
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const shouldReconnectRef = useRef(true)
+  const manualCloseRef = useRef(false)
+  const isMountedRef = useRef(true)
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const remoteStreamsRef = useRef<Map<string, MediaStream>>(new Map())
   const localStreamRef = useRef<MediaStream | null>(null)
@@ -314,7 +323,31 @@ function LiveRoom({
   )
 
   const teardownConnections = useCallback(() => {
-    wsRef.current?.close()
+    shouldReconnectRef.current = false
+    manualCloseRef.current = true
+    reconnectAttemptsRef.current = 0
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current)
+      reconnectTimerRef.current = null
+    }
+
+    const socket = wsRef.current
+    if (socket) {
+      try {
+        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+          socket.close(1000, 'Teardown')
+        } else {
+          socket.close()
+        }
+      } catch (error) {
+        console.warn('Failed to close websocket connection', error)
+      }
+    }
+
+    if (!socket || socket.readyState === WebSocket.CLOSED) {
+      manualCloseRef.current = false
+    }
+
     wsRef.current = null
 
     peersRef.current.forEach((_, peerId) => {
@@ -358,7 +391,18 @@ function LiveRoom({
     resetRecorder()
   }, [cleanupPeer, resetRecorder])
 
-  useEffect(() => () => teardownConnections(), [teardownConnections])
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      shouldReconnectRef.current = false
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current)
+        reconnectTimerRef.current = null
+      }
+      teardownConnections()
+    }
+  }, [teardownConnections])
 
   const sendSignal = useCallback(
     (payload: Record<string, unknown>) => {
@@ -439,6 +483,7 @@ function LiveRoom({
     async (message: ServerMessage) => {
       switch (message.type) {
         case 'joined': {
+          setErrorMessage(null)
           setConnectionStatus('connected')
           setStatusMessage('Siaran langsung siap. Undang siswa untuk bergabung.')
           const viewerPeers = message.peers.filter(
@@ -501,6 +546,7 @@ function LiveRoom({
     async (message: ServerMessage) => {
       switch (message.type) {
         case 'joined': {
+          setErrorMessage(null)
           setConnectionStatus('connected')
           const viewers = message.peers.filter((peer) => peer.role === 'viewer')
           setViewerCount(viewers.length)
@@ -617,73 +663,172 @@ function LiveRoom({
     },
     [iceServers, sendSignal]
   )
-  const connectWebSocket = useCallback(() => {
-    return new Promise<void>((resolve, reject) => {
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        resolve()
-        return
-      }
+  const connectWebSocket = useCallback(
+    ({ isReconnect = false }: { isReconnect?: boolean } = {}) =>
+      new Promise<void>((resolve, reject) => {
+        if (typeof window === 'undefined') {
+          reject(new Error('WebSocket hanya tersedia di browser'))
+          return
+        }
 
-      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-      const url = `${protocol}://${window.location.host}/api/ws`
-      const socket = new WebSocket(url)
-      wsRef.current = socket
+        if (reconnectTimerRef.current) {
+          clearTimeout(reconnectTimerRef.current)
+          reconnectTimerRef.current = null
+        }
 
-      socket.onopen = () => {
-        setConnectionStatus('connecting')
-        socket.send(
-          JSON.stringify({
-            type: 'join',
-            roomId,
-            clientId: clientIdRef.current,
-            role
-          })
-        )
-        resolve()
-      }
-
-      socket.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data) as ServerMessage
-          if (role === 'host') {
-            void handleHostMessage(payload)
-          } else {
-            void handleViewerMessage(payload)
+        const activeSocket = wsRef.current
+        if (activeSocket) {
+          if (activeSocket.readyState === WebSocket.OPEN) {
+            resolve()
+            return
           }
-        } catch (error) {
-          console.error('Failed to parse signaling message', error)
-        }
-      }
 
-      socket.onerror = (event) => {
-        console.error('WebSocket error', event)
-        setConnectionStatus('error')
-        
-        // Check if running on localhost
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        
-        if (isLocalhost) {
-          setErrorMessage('WebSocket tidak support di local development. Deploy ke Vercel untuk menggunakan Live Streaming.')
-          console.warn('⚠️ WebSocket Edge Runtime hanya bekerja di production (Vercel/Cloudflare)')
-          console.warn('📌 Untuk menggunakan Live Classroom, deploy aplikasi ke Vercel')
-          console.warn('📌 Command: vercel --prod')
-        } else {
-          setErrorMessage('Koneksi signaling mengalami masalah. Coba refresh halaman.')
+          if (activeSocket.readyState === WebSocket.CONNECTING) {
+            return
+          }
         }
-        
-        reject(new Error('WebSocket error'))
-      }
 
-      socket.onclose = () => {
-        setConnectionStatus((current) => (current === 'connected' ? 'idle' : current))
-        if (role === 'host') {
-          setStatusMessage('Koneksi signaling ditutup')
-        } else {
-          setStatusMessage('Terputus dari server. Coba gabung ulang jika diperlukan.')
+        shouldReconnectRef.current = true
+        manualCloseRef.current = false
+
+        if (!isReconnect) {
+          reconnectAttemptsRef.current = 0
+          setStatusMessage('Menghubungkan ke server signaling...')
         }
-      }
-    })
-  }, [handleHostMessage, handleViewerMessage, role, roomId])
+
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+        const url = `${protocol}://${window.location.host}/api/ws`
+        const socket = new WebSocket(url)
+        wsRef.current = socket
+
+        let hasOpened = false
+        let settled = false
+
+        const settleResolve = () => {
+          if (!settled) {
+            settled = true
+            resolve()
+          }
+        }
+
+        const settleReject = (error: Error) => {
+          if (!settled) {
+            settled = true
+            reject(error)
+          }
+        }
+
+        socket.addEventListener('open', () => {
+          if (!isMountedRef.current) {
+            return
+          }
+
+          hasOpened = true
+          reconnectAttemptsRef.current = 0
+          setConnectionStatus('connecting')
+          if (role === 'host') {
+            setStatusMessage(
+              isReconnect
+                ? 'Terhubung kembali ke server signaling. Menyelaraskan peserta...'
+                : 'Terhubung ke server signaling. Menyelaraskan peserta...'
+            )
+          } else {
+            setStatusMessage(
+              isReconnect
+                ? 'Terhubung kembali ke server signaling. Memuat ulang sesi...'
+                : 'Menghubungkan ke server signaling...'
+            )
+          }
+
+          socket.send(
+            JSON.stringify({
+              type: 'join',
+              roomId,
+              clientId: clientIdRef.current,
+              role
+            })
+          )
+          settleResolve()
+        })
+
+        socket.addEventListener('message', (event) => {
+          try {
+            const payload = JSON.parse(event.data as string) as ServerMessage
+            if (payload.type === 'ping') {
+              socket.send(JSON.stringify({ type: 'pong' }))
+              return
+            }
+
+            if (role === 'host') {
+              void handleHostMessage(payload)
+            } else {
+              void handleViewerMessage(payload)
+            }
+          } catch (error) {
+            console.error('Failed to parse signaling message', error)
+          }
+        })
+
+        socket.addEventListener('error', (event) => {
+          console.error('WebSocket error', event)
+          if (!isMountedRef.current) {
+            return
+          }
+
+          const isLocalhost =
+            window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+          if (!isReconnect && !hasOpened) {
+            setConnectionStatus('error')
+            if (isLocalhost) {
+              setErrorMessage(
+                'WebSocket signaling memerlukan Edge Runtime. Jalankan di Vercel atau gunakan HTTPS saat pengembangan.'
+              )
+              setStatusMessage('Koneksi signaling tidak tersedia di localhost tanpa Edge Runtime.')
+            } else {
+              setErrorMessage('Koneksi signaling mengalami gangguan. Sistem akan mencoba menyambung ulang.')
+              setStatusMessage('Koneksi signaling gagal. Menunggu percobaan ulang...')
+            }
+            settleReject(new Error('WebSocket error'))
+          }
+        })
+
+        socket.addEventListener('close', () => {
+          if (wsRef.current === socket) {
+            wsRef.current = null
+          }
+
+          if (reconnectTimerRef.current) {
+            clearTimeout(reconnectTimerRef.current)
+            reconnectTimerRef.current = null
+          }
+
+          if (!isMountedRef.current) {
+            return
+          }
+
+          if (manualCloseRef.current || !shouldReconnectRef.current) {
+            manualCloseRef.current = false
+            return
+          }
+
+          if (!hasOpened && !isReconnect) {
+            setConnectionStatus('error')
+            settleReject(new Error('WebSocket closed before ready'))
+          }
+
+          reconnectAttemptsRef.current += 1
+          const delay = Math.min(30_000, 1_000 * 2 ** (reconnectAttemptsRef.current - 1))
+          const seconds = Math.max(1, Math.round(delay / 1000))
+          setConnectionStatus('connecting')
+          setStatusMessage(`Koneksi signaling terputus. Mencoba lagi dalam ${seconds} detik...`)
+          reconnectTimerRef.current = window.setTimeout(() => {
+            void connectWebSocket({ isReconnect: true })
+          }, delay)
+        })
+      }),
+    [handleHostMessage, handleViewerMessage, role, roomId]
+  )
   const restoreCameraTrack = useCallback(() => {
     if (!localStreamRef.current || !cameraVideoTrackRef.current) {
       return

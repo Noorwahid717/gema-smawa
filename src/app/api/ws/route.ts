@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server'
 // Note: WebSocket only works in production (Vercel/Cloudflare)
 // For local development, consider using alternative signaling methods
 export const runtime = 'edge'
+export const dynamic = 'force-dynamic'
 
 type Role = 'host' | 'viewer'
 
@@ -30,7 +31,11 @@ type IceMessage = {
   candidate: RTCIceCandidateInit
 }
 
-type IncomingMessage = JoinMessage | SignalMessage | IceMessage
+type PongMessage = {
+  type: 'pong'
+}
+
+type IncomingMessage = JoinMessage | SignalMessage | IceMessage | PongMessage
 
 type OutgoingMessage =
   | {
@@ -61,6 +66,10 @@ type OutgoingMessage =
   | {
       type: 'error'
       message: string
+    }
+  | {
+      type: 'ping'
+      timestamp: number
     }
 
 type WebSocketResponseInit = ResponseInit & { webSocket: WebSocket }
@@ -137,7 +146,9 @@ function broadcast(roomId: string, payload: OutgoingMessage, excludeId?: string)
   for (const peer of peers) {
     if (peer.id === excludeId) continue
     try {
-      peer.socket.send(message)
+      if (peer.socket.readyState === WebSocket.OPEN) {
+        peer.socket.send(message)
+      }
     } catch (error) {
       console.error('Failed to broadcast message', error)
     }
@@ -146,7 +157,9 @@ function broadcast(roomId: string, payload: OutgoingMessage, excludeId?: string)
 
 function send(socket: WebSocket, payload: OutgoingMessage) {
   try {
-    socket.send(JSON.stringify(payload))
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(payload))
+    }
   } catch (error) {
     console.error('Failed to send message', error)
   }
@@ -188,11 +201,48 @@ export function GET(request: NextRequest) {
       clientId: null
     }
 
+    const heartbeatState = {
+      isAlive: true
+    }
+
     server.accept()
+
+    const heartbeatIntervalMs = 25_000
+    const heartbeatTimer = setInterval(() => {
+      if (server.readyState !== WebSocket.OPEN) {
+        return
+      }
+
+      if (!heartbeatState.isAlive) {
+        console.warn('[WS] No heartbeat from client, closing connection', {
+          requestId,
+          roomId: peerState.roomId,
+          clientId: peerState.clientId
+        })
+        try {
+          server.close(4000, 'No heartbeat received')
+        } catch (error) {
+          console.error('[WS] Failed to close stale connection', { requestId, error })
+        }
+        return
+      }
+
+      heartbeatState.isAlive = false
+      send(server, { type: 'ping', timestamp: Date.now() })
+    }, heartbeatIntervalMs)
+
+    const markHeartbeat = () => {
+      heartbeatState.isAlive = true
+    }
 
     server.addEventListener('message', (event) => {
       try {
+        markHeartbeat()
         const data = JSON.parse(event.data as string) as IncomingMessage
+
+        if (data.type === 'pong') {
+          return
+        }
         if (data.type === 'join') {
           handleJoin(server, data, peerState, requestId)
           return
@@ -213,6 +263,7 @@ export function GET(request: NextRequest) {
     const close = (event?: CloseEvent | Event) => {
       const { roomId, clientId } = peerState
       if (!roomId || !clientId) {
+        clearInterval(heartbeatTimer)
         return
       }
 
@@ -221,15 +272,21 @@ export function GET(request: NextRequest) {
         broadcast(roomId, { type: 'peer-left', clientId: peer.id }, peer.id)
       }
 
+      let reason: string | undefined
+      if (typeof CloseEvent !== 'undefined' && event instanceof CloseEvent) {
+        reason = event.reason
+      }
+
       console.log('[WS] Connection closed', {
         requestId,
         roomId,
         clientId,
-        reason: event instanceof CloseEvent ? event.reason : undefined
+        reason
       })
 
       peerState.roomId = null
       peerState.clientId = null
+      clearInterval(heartbeatTimer)
     }
 
     server.addEventListener('close', close)
