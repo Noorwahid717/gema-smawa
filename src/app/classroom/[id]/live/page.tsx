@@ -242,7 +242,7 @@ function LiveRoom({
   const clientIdRef = useRef(clientId)
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectAttemptsRef = useRef(0)
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const reconnectTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(true)
   const manualCloseRef = useRef(false)
   const isMountedRef = useRef(true)
@@ -326,8 +326,8 @@ function LiveRoom({
     shouldReconnectRef.current = false
     manualCloseRef.current = true
     reconnectAttemptsRef.current = 0
-    if (reconnectTimerRef.current) {
-      clearTimeout(reconnectTimerRef.current)
+    if (reconnectTimerRef.current !== null) {
+      window.clearTimeout(reconnectTimerRef.current)
       reconnectTimerRef.current = null
     }
 
@@ -396,8 +396,8 @@ function LiveRoom({
     return () => {
       isMountedRef.current = false
       shouldReconnectRef.current = false
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current)
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current)
         reconnectTimerRef.current = null
       }
       teardownConnections()
@@ -671,8 +671,8 @@ function LiveRoom({
           return
         }
 
-        if (reconnectTimerRef.current) {
-          clearTimeout(reconnectTimerRef.current)
+        if (reconnectTimerRef.current !== null) {
+          window.clearTimeout(reconnectTimerRef.current)
           reconnectTimerRef.current = null
         }
 
@@ -798,8 +798,8 @@ function LiveRoom({
             wsRef.current = null
           }
 
-          if (reconnectTimerRef.current) {
-            clearTimeout(reconnectTimerRef.current)
+          if (reconnectTimerRef.current !== null) {
+            window.clearTimeout(reconnectTimerRef.current)
             reconnectTimerRef.current = null
           }
 
