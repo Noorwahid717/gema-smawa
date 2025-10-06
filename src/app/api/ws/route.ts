@@ -85,19 +85,14 @@ function sendToPeer(room: string, targetPeerId: string, data: ServerMessage) {
 export function GET(request: Request) {
   const upgradeHeader = request.headers.get('upgrade') || ''
   if (upgradeHeader.toLowerCase() !== 'websocket') {
-    return new Response('Expected websocket', { status: 426 })
+    return new Response('Expected Upgrade: websocket', { status: 426 })
   }
 
-  const globalWithPair = globalThis as typeof globalThis & {
-    WebSocketPair?: new () => { 0: WebSocket; 1: WebSocket }
-  }
-  if (!globalWithPair.WebSocketPair) {
-    return new Response('WebSocket not supported', { status: 500 })
-  }
-
-  const { 0: client, 1: server } = new globalWithPair.WebSocketPair()
-  const ws = server as WebSocket & { accept: () => void }
-  ws.accept()
+  try {
+    // @ts-expect-error - WebSocketPair is provided by the Edge runtime
+    const { 0: client, 1: server } = new WebSocketPair()
+    const ws = server as WebSocket & { accept: () => void }
+    ws.accept()
 
   let currentRoom: string | null = null
   let currentPeerId = `peer_${Math.random().toString(36).slice(2, 9)}`
@@ -253,10 +248,14 @@ export function GET(request: Request) {
     leaveRoom()
   }
 
-  ws.addEventListener('close', cleanup)
-  ws.addEventListener('error', cleanup)
+    ws.addEventListener('close', cleanup)
+    ws.addEventListener('error', cleanup)
 
-  return new Response(null, { status: 101, webSocket: client } as ResponseInit & {
-    webSocket: WebSocket
-  })
+    return new Response(null, { status: 101, webSocket: client } as ResponseInit & {
+      webSocket: WebSocket
+    })
+  } catch (err) {
+    console.error('[ws] upgrade error', err)
+    return new Response('Failed to establish WebSocket connection', { status: 500 })
+  }
 }
