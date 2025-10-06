@@ -21,12 +21,12 @@ type ServerMessage =
     }
   | { type: 'peer'; from: string; payload: unknown }
   | { type: 'error'; message: string }
-  | { type: 'pong' }
+  | { type: 'ping'; timestamp: number }
 
 type ClientMessage =
   | { type: 'join'; room: string; peerId?: string; role?: Role }
   | { type: 'signal'; room: string; from?: string; to?: string; payload: unknown }
-  | { type: 'ping' }
+  | { type: 'pong' }
   | { type: 'leave'; room: string; peerId?: string }
 
 type PeerMetadata = { peerId: string; role?: Role }
@@ -60,7 +60,9 @@ function broadcast(room: string, data: ServerMessage, except?: WebSocket) {
     if (except && socket === except) continue
     try {
       socket.send(payload)
-    } catch {}
+    } catch {
+      // noop: ignore broken socket
+    }
   }
 }
 
@@ -72,7 +74,9 @@ function sendToPeer(room: string, targetPeerId: string, data: ServerMessage) {
     if (meta.peerId === targetPeerId) {
       try {
         socket.send(payload)
-      } catch {}
+      } catch {
+        // noop
+      }
       return
     }
   }
@@ -98,6 +102,25 @@ export function GET(request: Request) {
   let currentRoom: string | null = null
   let currentPeerId = `peer_${Math.random().toString(36).slice(2, 9)}`
   let currentRole: Role | undefined
+
+  // --- Heartbeat: server -> ping, client -> pong ---
+  let heartbeatAlive = true
+  const HEARTBEAT_MS = 25_000
+  const heartbeatTimer = setInterval(() => {
+    try {
+      if ((ws as WebSocket).readyState !== ws.OPEN) return
+      if (!heartbeatAlive) {
+        try {
+          ws.close(4000, 'No heartbeat (pong) received')
+        } catch {}
+        return
+      }
+      heartbeatAlive = false
+      ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() } satisfies ServerMessage))
+    } catch {
+      // ignore send errors
+    }
+  }, HEARTBEAT_MS)
 
   const leaveRoom = () => {
     if (!currentRoom) return
@@ -139,11 +162,12 @@ export function GET(request: Request) {
 
   ws.addEventListener('message', (ev: MessageEvent) => {
     try {
-      const raw = typeof ev.data === 'string' ? ev.data : new TextDecoder().decode(ev.data)
+      const raw = typeof ev.data === 'string' ? ev.data : new TextDecoder().decode(ev.data as ArrayBuffer)
       const msg = JSON.parse(raw) as ClientMessage
 
-      if (msg.type === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong' } satisfies ServerMessage))
+      if (msg.type === 'pong') {
+        // client replied to heartbeat
+        heartbeatAlive = true
         return
       }
 
@@ -215,22 +239,22 @@ export function GET(request: Request) {
         }
         return
       }
-    } catch (error) {
+    } catch {
       try {
-        ws.send(
-          JSON.stringify({ type: 'error', message: 'invalid message' } satisfies ServerMessage)
-        )
+        ws.send(JSON.stringify({ type: 'error', message: 'invalid message' } satisfies ServerMessage))
       } catch {}
     }
   })
 
-  ws.addEventListener('close', () => {
+  const cleanup = () => {
+    try {
+      clearInterval(heartbeatTimer)
+    } catch {}
     leaveRoom()
-  })
+  }
 
-  ws.addEventListener('error', () => {
-    leaveRoom()
-  })
+  ws.addEventListener('close', cleanup)
+  ws.addEventListener('error', cleanup)
 
   return new Response(null, { status: 101, webSocket: client } as ResponseInit & {
     webSocket: WebSocket

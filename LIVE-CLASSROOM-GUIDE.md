@@ -165,10 +165,10 @@ npm run dev
 3. **Uji koneksi siswa & relay sinyal**
    - Di tab/inkognito lain login sebagai siswa lalu join halaman live yang sama.
    - Pastikan jumlah penonton bertambah dan stream host muncul pada sisi siswa.
-   - Periksa Network WS bahwa frame bertipe `peer` membawa payload `offer`, `answer`, dan `ice` dan `payload.target` sesuai dengan ID lawan bicara.
+   - Periksa Network WS bahwa pesan `offer`, `answer`, dan `ice` saling bertukar.
 4. **Simulasi auto-reconnect**
    - Saat kedua sisi terhubung, hentikan server (`Ctrl+C`) atau aktifkan *Offline* di DevTools untuk beberapa detik.
-   - UI akan menampilkan pesan `Koneksi signaling terputus...` dan mencoba kembali dengan jeda bertambah hingga 30 detik.
+   - UI akan menampilkan pesan `Koneksi signaling terputus...` dan mencoba kembali dengan jeda bertambah.
    - Hidupkan kembali koneksi/server dan pastikan status berubah menjadi `Terhubung` tanpa perlu refresh.
 5. **Heartbeat & kestabilan**
    - Biarkan koneksi terbuka >1 menit; server akan mengirim `ping` dan klien merespons `pong` (cek tab WS → Frames).
