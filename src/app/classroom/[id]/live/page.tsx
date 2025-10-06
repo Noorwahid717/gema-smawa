@@ -23,44 +23,148 @@ import { uploadRecordingToCloudinary } from '@/lib/cloudinaryUpload'
 
 type Role = 'host' | 'viewer'
 
-type ServerMessage =
+type RemotePeer = {
+  peerId: string
+  role?: Role
+}
+
+type SignalingServerMessage =
   | {
       type: 'joined'
-      clientId: string
-      role: Role
-      peers: Array<{ clientId: string; role: Role }>
+      room: string
+      participants: number
+      peerId: string
+      role?: Role
+      peers?: RemotePeer[]
     }
   | {
-      type: 'peer-joined'
-      clientId: string
-      role: Role
+      type: 'left'
+      room: string
+      participants: number
+      peerId: string
+      role?: Role
     }
-  | {
-      type: 'peer-left'
-      clientId: string
-    }
-  | {
-      type: 'offer' | 'answer'
-      clientId: string
-      target: string
-      sdp: string
-    }
-  | {
-      type: 'ice'
-      clientId: string
-      target: string
-      candidate: RTCIceCandidateInit
-    }
-  | {
-      type: 'error'
-      message: string
-    }
-  | {
-      type: 'ping'
-      timestamp?: number
-    }
+  | { type: 'peer'; from: string; payload: unknown }
+  | { type: 'error'; message: string }
+  | { type: 'ping'; timestamp?: number } // server -> client
+  | { type: 'pong' } // (tidak dipakai oleh server, aman dibiarkan)
+
+type SignalPayload = {
+  type: string
+  target?: string
+  sdp?: string
+  candidate?: RTCIceCandidateInit
+  [key: string]: unknown
+}
+
+function isSignalPayload(value: unknown): value is SignalPayload {
+  return typeof value === 'object' && value !== null && 'type' in value
+}
 
 type ConnectionStatus = 'idle' | 'initializing' | 'connecting' | 'connected' | 'error'
+
+function makeWsUrl(path = '/api/ws') {
+  const loc = window.location
+  const isSecure = loc.protocol === 'https:'
+  const scheme = isSecure ? 'wss' : 'ws'
+  return `${scheme}://${loc.host}${path}`
+}
+
+type WsOpts = {
+  room: string
+  peerId: string
+  role: Role
+  onMessage: (data: unknown) => void
+  onStatus?: (s: 'connecting' | 'open' | 'closed' | 'error' | 'reconnecting') => void
+}
+
+function createSignaling({ room, peerId, role, onMessage, onStatus }: WsOpts) {
+  let ws: WebSocket | null = null
+  let retry = 0
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let manuallyClosed = false
+
+  const connect = () => {
+    onStatus?.('connecting')
+    ws = new WebSocket(makeWsUrl('/api/ws'))
+
+    ws.onopen = () => {
+      retry = 0
+      manuallyClosed = false
+      onStatus?.('open')
+      ws!.send(
+        JSON.stringify({
+          type: 'join',
+          room,
+          peerId,
+          role
+        })
+      )
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer)
+        reconnectTimer = null
+      }
+    }
+
+    ws.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data as string) as SignalingServerMessage
+        // Heartbeat: server -> ping, client -> pong
+        if (data && (data as any).type === 'ping') {
+          ws?.send(JSON.stringify({ type: 'pong' }))
+          return
+        }
+        onMessage?.(data)
+      } catch {
+        // ignore invalid payload
+      }
+    }
+
+    const scheduleReconnect = () => {
+      if (manuallyClosed) return
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      onStatus?.('reconnecting')
+      const delay = Math.min(30_000, 1_000 * Math.pow(2, retry++))
+      ws = null
+      reconnectTimer = setTimeout(connect, delay)
+    }
+
+    ws.onerror = () => {
+      onStatus?.('error')
+      try {
+        ws?.close()
+      } catch {}
+    }
+
+    ws.onclose = () => {
+      onStatus?.('closed')
+      ws = null
+      scheduleReconnect()
+    }
+  }
+
+  const send = (payload: unknown) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(payload))
+    }
+  }
+
+  const close = () => {
+    manuallyClosed = true
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+    try {
+      ws?.close()
+    } catch {}
+    ws = null
+  }
+
+  connect()
+
+  return { send, close }
+}
 
 type VideoPreviewProps = {
   stream: MediaStream | null
@@ -78,10 +182,7 @@ const FALLBACK_STUN = [
 
 function sanitizeStunEnv(rawValue: string): string {
   const trimmed = rawValue.trim()
-  if (!trimmed.length) {
-    return trimmed
-  }
-
+  if (!trimmed.length) return trimmed
   const withoutWrappingQuotes = trimmed.replace(/^['"]|['"]$/g, '')
   return withoutWrappingQuotes
 }
@@ -97,16 +198,12 @@ function resolveIceServers(): RTCIceServer[] {
       const parsed = JSON.parse(sanitized)
       const stunList = Array.isArray(parsed) ? parsed : [parsed]
       const validStun = stunList.filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
-
       if (validStun.length) {
         resolvedStunUrls.push(...validStun)
         console.log('✅ Using STUN servers from env', validStun)
       }
     } catch (error) {
-      console.warn('⚠️ Failed to parse NEXT_PUBLIC_STUN_URLS', {
-        error,
-        value: stunEnvRaw
-      })
+      console.warn('⚠️ Failed to parse NEXT_PUBLIC_STUN_URLS', { error, value: stunEnvRaw })
     }
   }
 
@@ -133,6 +230,7 @@ function resolveIceServers(): RTCIceServer[] {
   console.log('🎯 Resolved ICE servers', servers)
   return servers
 }
+
 export default function LiveClassroomPage() {
   const params = useParams<{ id: string }>()
   const classroomIdParam = Array.isArray(params?.id) ? params.id[0] : params?.id
@@ -145,8 +243,7 @@ export default function LiveClassroomPage() {
     const session = studentAuth.getSession()
     setStudentSession(session)
     setIsLoading(false)
-    
-    // Debug logging
+
     console.log('🔐 Auth Debug:', {
       authStatus,
       authSessionFull: authSession,
@@ -172,7 +269,6 @@ export default function LiveClassroomPage() {
     )
   }
 
-  // Show loading while checking authentication
   if (authStatus === 'loading' || isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
@@ -184,7 +280,6 @@ export default function LiveClassroomPage() {
     )
   }
 
-  // Check if user is authenticated
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
@@ -225,6 +320,7 @@ export default function LiveClassroomPage() {
     />
   )
 }
+
 function LiveRoom({
   roomId,
   role,
@@ -240,11 +336,7 @@ function LiveRoom({
       : Math.random().toString(36).slice(2)
   )
   const clientIdRef = useRef(clientId)
-  const wsRef = useRef<WebSocket | null>(null)
-  const reconnectAttemptsRef = useRef(0)
-  const reconnectTimerRef = useRef<number | null>(null)
-  const shouldReconnectRef = useRef(true)
-  const manualCloseRef = useRef(false)
+  const signalingRef = useRef<ReturnType<typeof createSignaling> | null>(null)
   const isMountedRef = useRef(true)
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const remoteStreamsRef = useRef<Map<string, MediaStream>>(new Map())
@@ -302,6 +394,7 @@ function LiveRoom({
     const streams = Array.from(remoteStreamsRef.current.values())
     setRemotePreviewStream(streams[0] ?? null)
   }, [])
+
   const cleanupPeer = useCallback(
     (peerId: string) => {
       const peer = peersRef.current.get(peerId)
@@ -323,32 +416,18 @@ function LiveRoom({
   )
 
   const teardownConnections = useCallback(() => {
-    shouldReconnectRef.current = false
-    manualCloseRef.current = true
-    reconnectAttemptsRef.current = 0
-    if (reconnectTimerRef.current !== null) {
-      window.clearTimeout(reconnectTimerRef.current)
-      reconnectTimerRef.current = null
-    }
-
-    const socket = wsRef.current
-    if (socket) {
+    const controller = signalingRef.current
+    if (controller) {
       try {
-        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-          socket.close(1000, 'Teardown')
-        } else {
-          socket.close()
-        }
-      } catch (error) {
-        console.warn('Failed to close websocket connection', error)
-      }
+        controller.send({
+          type: 'leave',
+          room: roomId,
+          peerId: clientIdRef.current
+        })
+      } catch {}
+      controller.close()
     }
-
-    if (!socket || socket.readyState === WebSocket.CLOSED) {
-      manualCloseRef.current = false
-    }
-
-    wsRef.current = null
+    signalingRef.current = null
 
     peersRef.current.forEach((_, peerId) => {
       cleanupPeer(peerId)
@@ -389,38 +468,34 @@ function LiveRoom({
     setLocalPreviewStream(null)
     setIsSharingScreen(false)
     resetRecorder()
-  }, [cleanupPeer, resetRecorder])
+  }, [cleanupPeer, resetRecorder, roomId])
 
   useEffect(() => {
     isMountedRef.current = true
     return () => {
       isMountedRef.current = false
-      shouldReconnectRef.current = false
-      if (reconnectTimerRef.current !== null) {
-        window.clearTimeout(reconnectTimerRef.current)
-        reconnectTimerRef.current = null
-      }
       teardownConnections()
     }
   }, [teardownConnections])
 
   const sendSignal = useCallback(
     (payload: Record<string, unknown>) => {
-      const socket = wsRef.current
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        return
-      }
+      const controller = signalingRef.current
+      if (!controller) return
 
-      socket.send(
-        JSON.stringify({
-          ...payload,
-          roomId,
-          clientId: clientIdRef.current
-        })
-      )
+      const target = typeof payload.target === 'string' ? (payload.target as string) : undefined
+
+      controller.send({
+        type: 'signal',
+        room: roomId,
+        from: clientIdRef.current,
+        to: target,
+        payload: { ...payload }
+      })
     },
     [roomId]
   )
+
   const handlePeerJoin = useCallback(
     async (viewerId: string) => {
       if (!localStreamRef.current) {
@@ -448,10 +523,7 @@ function LiveRoom({
         }
 
         peer.onconnectionstatechange = () => {
-          if (
-            peer &&
-            ['failed', 'disconnected', 'closed'].includes(peer.connectionState)
-          ) {
+          if (peer && ['failed', 'disconnected', 'closed'].includes(peer.connectionState)) {
             cleanupPeer(viewerId)
           }
         }
@@ -479,58 +551,66 @@ function LiveRoom({
     },
     [cleanupPeer, iceServers, sendSignal, updateRemotePreview]
   )
+
   const handleHostMessage = useCallback(
-    async (message: ServerMessage) => {
+    async (message: SignalingServerMessage) => {
       switch (message.type) {
         case 'joined': {
-          setErrorMessage(null)
-          setConnectionStatus('connected')
-          setStatusMessage('Siaran langsung siap. Undang siswa untuk bergabung.')
-          const viewerPeers = message.peers.filter(
-            (peer) => peer.clientId !== clientIdRef.current && peer.role === 'viewer'
-          )
-          setViewerCount(viewerPeers.length)
-          await Promise.all(viewerPeers.map((peer) => handlePeerJoin(peer.clientId)))
-          break
-        }
-        case 'peer-joined': {
-          if (message.role === 'viewer') {
-            setViewerCount((count) => count + 1)
-            setStatusMessage('Peserta baru bergabung ke kelas')
-            await handlePeerJoin(message.clientId)
-          }
-          break
-        }
-        case 'peer-left': {
-          cleanupPeer(message.clientId)
-          setViewerCount((count) => Math.max(0, count - 1))
-          setStatusMessage('Seorang peserta meninggalkan kelas')
-          break
-        }
-        case 'answer': {
-          const peer = peersRef.current.get(message.clientId)
-          if (!peer) {
-            console.warn('Peer not found for answer', message.clientId)
-            break
-          }
-          try {
-            await peer.setRemoteDescription(
-              new RTCSessionDescription({ type: 'answer', sdp: message.sdp })
+          if (message.peerId === clientIdRef.current) {
+            setErrorMessage(null)
+            setConnectionStatus('connected')
+            setStatusMessage('Siaran langsung siap. Undang siswa untuk bergabung.')
+            const viewerPeers = (message.peers ?? []).filter(
+              (peer) => peer.peerId !== clientIdRef.current && (peer.role ?? 'viewer') === 'viewer'
             )
-          } catch (error) {
-            console.error('Failed to set remote description (answer)', error)
+            setViewerCount(viewerPeers.length)
+            await Promise.all(viewerPeers.map((peer) => handlePeerJoin(peer.peerId)))
+          } else if ((message.role ?? 'viewer') === 'viewer') {
+            const nextCount = Math.max(0, message.participants - 1)
+            setViewerCount(nextCount)
+            setStatusMessage('Peserta baru bergabung ke kelas')
+            if (!peersRef.current.has(message.peerId)) {
+              await handlePeerJoin(message.peerId)
+            }
           }
           break
         }
-        case 'ice': {
-          const peer = peersRef.current.get(message.clientId)
-          if (!peer) {
+        case 'left': {
+          if (message.peerId === clientIdRef.current) break
+          if ((message.role ?? 'viewer') === 'viewer') {
+            cleanupPeer(message.peerId)
+            setViewerCount(Math.max(0, message.participants - 1))
+            setStatusMessage('Seorang peserta meninggalkan kelas')
+          }
+          break
+        }
+        case 'peer': {
+          const payload = message.payload
+          if (!isSignalPayload(payload)) break
+
+          if (payload.type === 'answer' && payload.target === clientIdRef.current) {
+            if (typeof payload.sdp !== 'string') break
+            const peer = peersRef.current.get(message.from)
+            if (!peer) {
+              console.warn('Peer not found for answer', message.from)
+              break
+            }
+            try {
+              await peer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: payload.sdp }))
+            } catch (error) {
+              console.error('Failed to set remote description (answer)', error)
+            }
             break
           }
-          try {
-            await peer.addIceCandidate(new RTCIceCandidate(message.candidate))
-          } catch (error) {
-            console.error('Failed to add ICE candidate', error)
+
+          if (payload.type === 'ice' && payload.target === clientIdRef.current) {
+            const peer = peersRef.current.get(message.from)
+            if (!peer) break
+            try {
+              await peer.addIceCandidate(new RTCIceCandidate(payload.candidate as RTCIceCandidateInit))
+            } catch (error) {
+              console.error('Failed to add ICE candidate', error)
+            }
           }
           break
         }
@@ -542,89 +622,92 @@ function LiveRoom({
     },
     [cleanupPeer, handlePeerJoin]
   )
+
   const handleViewerMessage = useCallback(
-    async (message: ServerMessage) => {
+    async (message: SignalingServerMessage) => {
       switch (message.type) {
         case 'joined': {
-          setErrorMessage(null)
-          setConnectionStatus('connected')
-          const viewers = message.peers.filter((peer) => peer.role === 'viewer')
-          setViewerCount(viewers.length)
-          const hostPeer = message.peers.find((peer) => peer.role === 'host')
-          hostPeerIdRef.current = hostPeer?.clientId ?? null
-          setStatusMessage(
-            hostPeer ? 'Menunggu stream dari guru...' : 'Guru belum bergabung ke kelas'
-          )
+          if (message.peerId === clientIdRef.current) {
+            setErrorMessage(null)
+            setConnectionStatus('connected')
+            setViewerCount(Math.max(0, message.participants - 1))
+            const hostPeer = (message.peers ?? []).find((peer) => (peer.role ?? 'viewer') === 'host')
+            hostPeerIdRef.current = hostPeer?.peerId ?? hostPeerIdRef.current
+            setStatusMessage(hostPeer ? 'Menunggu stream dari guru...' : 'Guru belum bergabung ke kelas')
+          } else if ((message.role ?? 'viewer') === 'host') {
+            hostPeerIdRef.current = message.peerId
+            setStatusMessage('Guru bergabung, menunggu stream...')
+          } else if (message.peerId !== clientIdRef.current && (message.role ?? 'viewer') === 'viewer') {
+            setViewerCount(Math.max(0, message.participants - 1))
+          }
           break
         }
-        case 'offer': {
-          try {
-            hostPeerIdRef.current = message.clientId
-            let peer = viewerPeerRef.current
-            if (!peer) {
-              peer = new RTCPeerConnection({ iceServers })
-              viewerPeerRef.current = peer
+        case 'peer': {
+          const payload = message.payload
+          if (!isSignalPayload(payload)) break
 
-              peer.onicecandidate = (event) => {
-                if (event.candidate) {
-                  sendSignal({
-                    type: 'ice',
-                    target: message.clientId,
-                    candidate: event.candidate.toJSON()
-                  })
+          if (payload.type === 'offer' && payload.target === clientIdRef.current) {
+            try {
+              if (typeof payload.sdp !== 'string') break
+              hostPeerIdRef.current = message.from
+              let peer = viewerPeerRef.current
+              if (!peer) {
+                peer = new RTCPeerConnection({ iceServers })
+                viewerPeerRef.current = peer
+
+                peer.onicecandidate = (event) => {
+                  if (event.candidate) {
+                    sendSignal({
+                      type: 'ice',
+                      target: message.from,
+                      candidate: event.candidate.toJSON()
+                    })
+                  }
+                }
+
+                peer.ontrack = (event) => {
+                  if (event.streams[0]) {
+                    setRemotePreviewStream(event.streams[0])
+                    setStatusMessage('Terhubung dengan guru')
+                  }
+                }
+
+                peer.onconnectionstatechange = () => {
+                  if (!viewerPeerRef.current) return
+                  if (['failed', 'disconnected'].includes(viewerPeerRef.current.connectionState)) {
+                    setStatusMessage('Koneksi ke guru terputus. Mencoba kembali...')
+                  }
                 }
               }
 
-              peer.ontrack = (event) => {
-                if (event.streams[0]) {
-                  setRemotePreviewStream(event.streams[0])
-                  setStatusMessage('Terhubung dengan guru')
-                }
-              }
-
-              peer.onconnectionstatechange = () => {
-                if (!viewerPeerRef.current) {
-                  return
-                }
-                if (
-                  ['failed', 'disconnected'].includes(viewerPeerRef.current.connectionState)
-                ) {
-                  setStatusMessage('Koneksi ke guru terputus. Mencoba kembali...')
-                }
-              }
+              await peer.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: payload.sdp }))
+              const answer = await peer.createAnswer()
+              await peer.setLocalDescription(answer)
+              sendSignal({
+                type: 'answer',
+                target: message.from,
+                sdp: answer.sdp
+              })
+            } catch (error) {
+              console.error('Failed to handle offer', error)
+              setErrorMessage('Gagal menerima stream dari guru')
             }
+          }
 
-            await peer.setRemoteDescription(
-              new RTCSessionDescription({ type: 'offer', sdp: message.sdp })
-            )
-            const answer = await peer.createAnswer()
-            await peer.setLocalDescription(answer)
-            sendSignal({
-              type: 'answer',
-              target: message.clientId,
-              sdp: answer.sdp
-            })
-          } catch (error) {
-            console.error('Failed to handle offer', error)
-            setErrorMessage('Gagal menerima stream dari guru')
+          if (payload.type === 'ice' && payload.target === clientIdRef.current) {
+            if (!viewerPeerRef.current) break
+            try {
+              await viewerPeerRef.current.addIceCandidate(
+                new RTCIceCandidate(payload.candidate as RTCIceCandidateInit)
+              )
+            } catch (error) {
+              console.error('Failed to add ICE candidate (viewer)', error)
+            }
           }
           break
         }
-        case 'ice': {
-          if (!viewerPeerRef.current) {
-            break
-          }
-          try {
-            await viewerPeerRef.current.addIceCandidate(
-              new RTCIceCandidate(message.candidate)
-            )
-          } catch (error) {
-            console.error('Failed to add ICE candidate (viewer)', error)
-          }
-          break
-        }
-        case 'peer-left': {
-          if (message.clientId === hostPeerIdRef.current) {
+        case 'left': {
+          if (message.peerId === hostPeerIdRef.current) {
             setStatusMessage('Guru keluar dari sesi. Menunggu untuk bergabung kembali...')
             hostPeerIdRef.current = null
             setRemotePreviewStream(null)
@@ -640,18 +723,8 @@ function LiveRoom({
               viewerPeerRef.current = null
             }
           }
-          if (message.clientId !== clientIdRef.current) {
-            setViewerCount((count) => Math.max(0, count - 1))
-          }
-          break
-        }
-        case 'peer-joined': {
-          if (message.role === 'viewer' && message.clientId !== clientIdRef.current) {
-            setViewerCount((count) => count + 1)
-          }
-          if (message.role === 'host') {
-            hostPeerIdRef.current = message.clientId
-            setStatusMessage('Guru bergabung, menunggu stream...')
+          if (message.peerId !== clientIdRef.current && (message.role ?? 'viewer') === 'viewer') {
+            setViewerCount(Math.max(0, message.participants - 1))
           }
           break
         }
@@ -663,54 +736,27 @@ function LiveRoom({
     },
     [iceServers, sendSignal]
   )
-  const connectWebSocket = useCallback(
-    ({ isReconnect = false }: { isReconnect?: boolean } = {}) =>
+
+  const connectSignaling = useCallback(
+    () =>
       new Promise<void>((resolve, reject) => {
         if (typeof window === 'undefined') {
           reject(new Error('WebSocket hanya tersedia di browser'))
           return
         }
 
-        if (reconnectTimerRef.current !== null) {
-          window.clearTimeout(reconnectTimerRef.current)
-          reconnectTimerRef.current = null
+        if (signalingRef.current) {
+          resolve()
+          return
         }
 
-        const activeSocket = wsRef.current
-        if (activeSocket) {
-          if (activeSocket.readyState === WebSocket.OPEN) {
-            resolve()
-            return
-          }
-
-          if (activeSocket.readyState === WebSocket.CONNECTING) {
-            return
-          }
-        }
-
-        shouldReconnectRef.current = true
-        manualCloseRef.current = false
-
-        if (!isReconnect) {
-          reconnectAttemptsRef.current = 0
-          setStatusMessage('Menghubungkan ke server signaling...')
-        }
-
-        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-        const url = `${protocol}://${window.location.host}/api/ws`
-        const socket = new WebSocket(url)
-        wsRef.current = socket
-
-        let hasOpened = false
         let settled = false
-
         const settleResolve = () => {
           if (!settled) {
             settled = true
             resolve()
           }
         }
-
         const settleReject = (error: Error) => {
           if (!settled) {
             settled = true
@@ -718,121 +764,86 @@ function LiveRoom({
           }
         }
 
-        socket.addEventListener('open', () => {
-          if (!isMountedRef.current) {
-            return
-          }
-
-          hasOpened = true
-          reconnectAttemptsRef.current = 0
-          setConnectionStatus('connecting')
-          if (role === 'host') {
-            setStatusMessage(
-              isReconnect
-                ? 'Terhubung kembali ke server signaling. Menyelaraskan peserta...'
-                : 'Terhubung ke server signaling. Menyelaraskan peserta...'
-            )
-          } else {
-            setStatusMessage(
-              isReconnect
-                ? 'Terhubung kembali ke server signaling. Memuat ulang sesi...'
-                : 'Menghubungkan ke server signaling...'
-            )
-          }
-
-          socket.send(
-            JSON.stringify({
-              type: 'join',
-              roomId,
-              clientId: clientIdRef.current,
-              role
-            })
-          )
-          settleResolve()
-        })
-
-        socket.addEventListener('message', (event) => {
-          try {
-            const payload = JSON.parse(event.data as string) as ServerMessage
-            if (payload.type === 'ping') {
-              socket.send(JSON.stringify({ type: 'pong' }))
-              return
+        try {
+          const controller = createSignaling({
+            room: roomId,
+            peerId: clientIdRef.current,
+            role,
+            onMessage: (data) => {
+              if (!isMountedRef.current) return
+              try {
+                const parsed = data as SignalingServerMessage
+                if (parsed.type === 'pong') {
+                  return
+                }
+                if (role === 'host') {
+                  void handleHostMessage(parsed)
+                } else {
+                  void handleViewerMessage(parsed)
+                }
+              } catch (error) {
+                console.error('Failed to process signaling message', error)
+              }
+            },
+            onStatus: (status) => {
+              if (!isMountedRef.current) return
+              switch (status) {
+                case 'connecting': {
+                  setConnectionStatus('connecting')
+                  setStatusMessage('Menghubungkan ke server signaling...')
+                  break
+                }
+                case 'open': {
+                  setConnectionStatus('connecting')
+                  if (role === 'host') {
+                    setStatusMessage('Terhubung ke server signaling. Menyelaraskan peserta...')
+                  } else {
+                    setStatusMessage('Menghubungkan ke server signaling...')
+                  }
+                  settleResolve()
+                  break
+                }
+                case 'reconnecting': {
+                  setConnectionStatus('connecting')
+                  setStatusMessage('Koneksi signaling terputus. Mencoba lagi...')
+                  break
+                }
+                case 'error': {
+                  setConnectionStatus('error')
+                  const isLocalhost =
+                    window.location.hostname === 'localhost' ||
+                    window.location.hostname === '127.0.0.1'
+                  if (isLocalhost) {
+                    setErrorMessage(
+                      'WebSocket signaling memerlukan Edge Runtime. Jalankan di Vercel atau gunakan HTTPS saat pengembangan.'
+                    )
+                    setStatusMessage('Koneksi signaling tidak tersedia di localhost tanpa Edge Runtime.')
+                  } else {
+                    setErrorMessage('Koneksi signaling mengalami gangguan. Sistem akan mencoba menyambung ulang.')
+                    setStatusMessage('Koneksi signaling gagal. Menunggu percobaan ulang...')
+                  }
+                  settleReject(new Error('WebSocket error'))
+                  break
+                }
+                case 'closed': {
+                  if (!settled) {
+                    settleReject(new Error('WebSocket closed'))
+                  }
+                  break
+                }
+              }
             }
-
-            if (role === 'host') {
-              void handleHostMessage(payload)
-            } else {
-              void handleViewerMessage(payload)
-            }
-          } catch (error) {
-            console.error('Failed to parse signaling message', error)
-          }
-        })
-
-        socket.addEventListener('error', (event) => {
-          console.error('WebSocket error', event)
-          if (!isMountedRef.current) {
-            return
-          }
-
-          const isLocalhost =
-            window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-
-          if (!isReconnect && !hasOpened) {
-            setConnectionStatus('error')
-            if (isLocalhost) {
-              setErrorMessage(
-                'WebSocket signaling memerlukan Edge Runtime. Jalankan di Vercel atau gunakan HTTPS saat pengembangan.'
-              )
-              setStatusMessage('Koneksi signaling tidak tersedia di localhost tanpa Edge Runtime.')
-            } else {
-              setErrorMessage('Koneksi signaling mengalami gangguan. Sistem akan mencoba menyambung ulang.')
-              setStatusMessage('Koneksi signaling gagal. Menunggu percobaan ulang...')
-            }
-            settleReject(new Error('WebSocket error'))
-          }
-        })
-
-        socket.addEventListener('close', () => {
-          if (wsRef.current === socket) {
-            wsRef.current = null
-          }
-
-          if (reconnectTimerRef.current !== null) {
-            window.clearTimeout(reconnectTimerRef.current)
-            reconnectTimerRef.current = null
-          }
-
-          if (!isMountedRef.current) {
-            return
-          }
-
-          if (manualCloseRef.current || !shouldReconnectRef.current) {
-            manualCloseRef.current = false
-            return
-          }
-
-          if (!hasOpened && !isReconnect) {
-            setConnectionStatus('error')
-            settleReject(new Error('WebSocket closed before ready'))
-          }
-
-          reconnectAttemptsRef.current += 1
-          const delay = Math.min(30_000, 1_000 * 2 ** (reconnectAttemptsRef.current - 1))
-          const seconds = Math.max(1, Math.round(delay / 1000))
-          setConnectionStatus('connecting')
-          setStatusMessage(`Koneksi signaling terputus. Mencoba lagi dalam ${seconds} detik...`)
-          reconnectTimerRef.current = window.setTimeout(() => {
-            void connectWebSocket({ isReconnect: true })
-          }, delay)
-        })
+          })
+          signalingRef.current = controller
+        } catch (error) {
+          settleReject(error instanceof Error ? error : new Error('WebSocket error'))
+        }
       }),
     [handleHostMessage, handleViewerMessage, role, roomId]
   )
+
   const restoreCameraTrack = useCallback(() => {
-    if (!localStreamRef.current || !cameraVideoTrackRef.current) {
-      return
-    }
+    if (!localStreamRef.current || !cameraVideoTrackRef.current) return
 
     const localStream = localStreamRef.current
     const videoTracks = localStream.getVideoTracks()
@@ -855,9 +866,7 @@ function LiveRoom({
   }, [])
 
   const stopShareScreen = useCallback(() => {
-    if (!isSharingScreen) {
-      return
-    }
+    if (!isSharingScreen) return
     if (screenStreamRef.current) {
       screenStreamRef.current.getTracks().forEach((track) => track.stop())
       screenStreamRef.current = null
@@ -866,9 +875,7 @@ function LiveRoom({
   }, [isSharingScreen, restoreCameraTrack])
 
   const handleToggleShareScreen = useCallback(async () => {
-    if (role !== 'host' || !localStreamRef.current) {
-      return
-    }
+    if (role !== 'host' || !localStreamRef.current) return
 
     if (isSharingScreen) {
       stopShareScreen()
@@ -876,10 +883,7 @@ function LiveRoom({
     }
 
     try {
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false
-      })
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
       const screenTrack = displayStream.getVideoTracks()[0]
       if (!screenTrack) {
         setErrorMessage('Tidak dapat mengambil layar untuk dibagikan')
@@ -910,6 +914,7 @@ function LiveRoom({
       setErrorMessage('Gagal memulai share screen')
     }
   }, [isSharingScreen, role, stopShareScreen])
+
   const initializeLocalStream = useCallback(async () => {
     setStatusMessage('Meminta izin kamera & mikrofon...')
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -920,9 +925,7 @@ function LiveRoom({
   }, [])
 
   const handleStartClass = useCallback(async () => {
-    if (role !== 'host' || isLive) {
-      return
-    }
+    if (role !== 'host' || isLive) return
 
     try {
       setErrorMessage(null)
@@ -930,46 +933,33 @@ function LiveRoom({
       await initializeLocalStream()
 
       setStatusMessage('Mempersiapkan sesi live...')
-      const startResponse = await fetch(`/api/classroom/${roomId}/session/start`, {
-        method: 'POST'
-      })
-
-      if (!startResponse.ok) {
-        throw new Error('Gagal membuat sesi live')
-      }
+      const startResponse = await fetch(`/api/classroom/${roomId}/session/start`, { method: 'POST' })
+      if (!startResponse.ok) throw new Error('Gagal membuat sesi live')
 
       const payload = (await startResponse.json()) as { session: { id: string } }
       setSessionId(payload.session.id)
 
-      await connectWebSocket()
+      await connectSignaling()
       setIsLive(true)
       setStatusMessage('Siaran dimulai. Siswa dapat bergabung sekarang.')
     } catch (error) {
       console.error('Failed to start class', error)
       setConnectionStatus('error')
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Gagal memulai kelas langsung'
-      )
+      setErrorMessage(error instanceof Error ? error.message : 'Gagal memulai kelas langsung')
       teardownConnections()
       setIsLive(false)
       setSessionId(null)
     }
-  }, [connectWebSocket, initializeLocalStream, isLive, role, roomId, teardownConnections])
+  }, [connectSignaling, initializeLocalStream, isLive, role, roomId, teardownConnections])
 
   const finalizeSession = useCallback(
     async (recordUrl?: string | null) => {
-      if (!sessionId) {
-        return
-      }
-
+      if (!sessionId) return
       try {
         await fetch(`/api/classroom/${roomId}/session/end`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId,
-            recordingUrl: recordUrl ?? recordingUrl ?? null
-          })
+          body: JSON.stringify({ sessionId, recordingUrl: recordUrl ?? recordingUrl ?? null })
         })
       } catch (error) {
         console.error('Failed to finalize session', error)
@@ -980,10 +970,7 @@ function LiveRoom({
   )
 
   const handleStopRecording = useCallback(async () => {
-    if (role !== 'host' || !isRecording) {
-      return
-    }
-
+    if (role !== 'host' || !isRecording) return
     try {
       const blob = await stopRecording()
       if (blob) {
@@ -1000,11 +987,9 @@ function LiveRoom({
       setErrorMessage('Gagal menyimpan rekaman')
     }
   }, [isRecording, role, roomId, stopRecording])
-  const handleEndClass = useCallback(async () => {
-    if (role !== 'host' || !isLive) {
-      return
-    }
 
+  const handleEndClass = useCallback(async () => {
+    if (role !== 'host' || !isLive) return
     try {
       setStatusMessage('Mengakhiri sesi live...')
       if (isRecording) {
@@ -1020,11 +1005,9 @@ function LiveRoom({
       setStatusMessage('Kelas telah diakhiri')
     }
   }, [finalizeSession, handleStopRecording, isLive, isRecording, role, teardownConnections])
-  const handleStartRecording = useCallback(async () => {
-    if (role !== 'host' || !localStreamRef.current || isRecording) {
-      return
-    }
 
+  const handleStartRecording = useCallback(async () => {
+    if (role !== 'host' || !localStreamRef.current || isRecording) return
     try {
       await startRecording(localStreamRef.current)
       setStatusMessage('Perekaman dimulai')
@@ -1034,20 +1017,19 @@ function LiveRoom({
       setErrorMessage('Gagal memulai perekaman')
     }
   }, [isRecording, role, startRecording])
-  const handleJoinClass = useCallback(async () => {
-    if (role !== 'viewer') {
-      return
-    }
 
+  const handleJoinClass = useCallback(async () => {
+    if (role !== 'viewer') return
     try {
       setErrorMessage(null)
       setStatusMessage('Menghubungkan ke kelas...')
-      await connectWebSocket()
+      await connectSignaling()
     } catch (error) {
       console.error('Failed to join class', error)
       setErrorMessage('Tidak dapat terhubung ke sesi live')
     }
-  }, [connectWebSocket, role])
+  }, [connectSignaling, role])
+
   const statusLabel = useMemo(() => {
     switch (connectionStatus) {
       case 'initializing':
@@ -1076,7 +1058,10 @@ function LiveRoom({
         return 'bg-slate-700/40 text-slate-300 border border-slate-600/60'
     }
   }, [connectionStatus])
-  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -1103,7 +1088,7 @@ function LiveRoom({
             </div>
           </div>
         )}
-        
+
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-3 text-sm text-slate-300">
@@ -1172,12 +1157,7 @@ function LiveRoom({
               {recordingUrl && (
                 <div className="mt-4 flex items-center gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-200">
                   <CheckCircle2 className="h-5 w-5" />
-                  <a
-                    href={recordingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline"
-                  >
+                  <a href={recordingUrl} target="_blank" rel="noreferrer" className="underline">
                     Rekaman tersedia di Cloudinary
                   </a>
                 </div>
@@ -1307,4 +1287,3 @@ const VideoPreview = forwardRef<HTMLVideoElement, VideoPreviewProps>(
 )
 
 VideoPreview.displayName = 'VideoPreview'
-

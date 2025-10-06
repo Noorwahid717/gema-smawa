@@ -86,6 +86,9 @@ Tombol Live Classroom sudah ditambahkan di:
 - Signaling channel untuk koordinasi
 - Edge runtime untuk performa optimal
 - Support multiple rooms
+- State ringan disimpan di memori Edge (`room -> peers`) dengan informasi `peerId` dan `role`
+- Pesan `join` akan mengirim daftar peserta yang sudah ada, `joined/left` menyiarkan jumlah peserta terkini
+- Payload WebRTC (`offer`, `answer`, `ice`) dibungkus sebagai event `peer` sehingga klien cukup memfilter berdasarkan `payload.target`
 
 ### **MediaRecorder API**
 - Recording sesi di browser host
