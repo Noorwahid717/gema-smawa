@@ -46,7 +46,8 @@ type SignalingServerMessage =
     }
   | { type: 'peer'; from: string; payload: unknown }
   | { type: 'error'; message: string }
-  | { type: 'pong' }
+  | { type: 'ping'; timestamp?: number } // server -> client
+  | { type: 'pong' } // (tidak dipakai oleh server, aman dibiarkan)
 
 type SignalPayload = {
   type: string
@@ -72,17 +73,16 @@ function makeWsUrl(path = '/api/ws') {
 type WsOpts = {
   room: string
   peerId: string
-  joinPayload?: Record<string, unknown>
+  role: Role
   onMessage: (data: unknown) => void
   onStatus?: (s: 'connecting' | 'open' | 'closed' | 'error' | 'reconnecting') => void
 }
 
-function createSignaling({ room, peerId, joinPayload, onMessage, onStatus }: WsOpts) {
+function createSignaling({ room, peerId, role, onMessage, onStatus }: WsOpts) {
   let ws: WebSocket | null = null
   let retry = 0
-  let pingTimer: number | null = null
-  let reconnectTimer: number | null = null
-  let closedManually = false
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let manuallyClosed = false
 
   const connect = () => {
     onStatus?.('connecting')
@@ -90,48 +90,43 @@ function createSignaling({ room, peerId, joinPayload, onMessage, onStatus }: WsO
 
     ws.onopen = () => {
       retry = 0
-      closedManually = false
+      manuallyClosed = false
       onStatus?.('open')
       ws!.send(
         JSON.stringify({
           type: 'join',
           room,
           peerId,
-          ...(joinPayload ?? {})
+          role
         })
       )
-      if (reconnectTimer !== null) {
-        window.clearTimeout(reconnectTimer)
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer)
         reconnectTimer = null
       }
-      pingTimer = window.setInterval(() => {
-        try {
-          ws?.send(JSON.stringify({ type: 'ping' }))
-        } catch {}
-      }, 25_000)
     }
 
     ws.onmessage = (ev) => {
       try {
-        const data = JSON.parse(ev.data as string)
+        const data = JSON.parse(ev.data as string) as SignalingServerMessage
+        // Heartbeat: server -> ping, client -> pong
+        if (data && (data as any).type === 'ping') {
+          ws?.send(JSON.stringify({ type: 'pong' }))
+          return
+        }
         onMessage?.(data)
-      } catch {}
+      } catch {
+        // ignore invalid payload
+      }
     }
 
     const scheduleReconnect = () => {
-      if (closedManually) {
-        return
-      }
-      if (pingTimer !== null) {
-        window.clearInterval(pingTimer)
-        pingTimer = null
-      }
-      if (reconnectTimer !== null) {
-        window.clearTimeout(reconnectTimer)
-      }
+      if (manuallyClosed) return
+      if (reconnectTimer) clearTimeout(reconnectTimer)
       onStatus?.('reconnecting')
       const delay = Math.min(30_000, 1_000 * Math.pow(2, retry++))
-      reconnectTimer = window.setTimeout(connect, delay)
+      ws = null
+      reconnectTimer = setTimeout(connect, delay)
     }
 
     ws.onerror = () => {
@@ -143,10 +138,6 @@ function createSignaling({ room, peerId, joinPayload, onMessage, onStatus }: WsO
 
     ws.onclose = () => {
       onStatus?.('closed')
-      if (pingTimer !== null) {
-        window.clearInterval(pingTimer)
-        pingTimer = null
-      }
       ws = null
       scheduleReconnect()
     }
@@ -159,13 +150,9 @@ function createSignaling({ room, peerId, joinPayload, onMessage, onStatus }: WsO
   }
 
   const close = () => {
-    closedManually = true
-    if (pingTimer !== null) {
-      window.clearInterval(pingTimer)
-      pingTimer = null
-    }
-    if (reconnectTimer !== null) {
-      window.clearTimeout(reconnectTimer)
+    manuallyClosed = true
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
       reconnectTimer = null
     }
     try {
@@ -195,10 +182,7 @@ const FALLBACK_STUN = [
 
 function sanitizeStunEnv(rawValue: string): string {
   const trimmed = rawValue.trim()
-  if (!trimmed.length) {
-    return trimmed
-  }
-
+  if (!trimmed.length) return trimmed
   const withoutWrappingQuotes = trimmed.replace(/^['"]|['"]$/g, '')
   return withoutWrappingQuotes
 }
@@ -214,16 +198,12 @@ function resolveIceServers(): RTCIceServer[] {
       const parsed = JSON.parse(sanitized)
       const stunList = Array.isArray(parsed) ? parsed : [parsed]
       const validStun = stunList.filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
-
       if (validStun.length) {
         resolvedStunUrls.push(...validStun)
         console.log('✅ Using STUN servers from env', validStun)
       }
     } catch (error) {
-      console.warn('⚠️ Failed to parse NEXT_PUBLIC_STUN_URLS', {
-        error,
-        value: stunEnvRaw
-      })
+      console.warn('⚠️ Failed to parse NEXT_PUBLIC_STUN_URLS', { error, value: stunEnvRaw })
     }
   }
 
@@ -250,6 +230,7 @@ function resolveIceServers(): RTCIceServer[] {
   console.log('🎯 Resolved ICE servers', servers)
   return servers
 }
+
 export default function LiveClassroomPage() {
   const params = useParams<{ id: string }>()
   const classroomIdParam = Array.isArray(params?.id) ? params.id[0] : params?.id
@@ -262,8 +243,7 @@ export default function LiveClassroomPage() {
     const session = studentAuth.getSession()
     setStudentSession(session)
     setIsLoading(false)
-    
-    // Debug logging
+
     console.log('🔐 Auth Debug:', {
       authStatus,
       authSessionFull: authSession,
@@ -289,7 +269,6 @@ export default function LiveClassroomPage() {
     )
   }
 
-  // Show loading while checking authentication
   if (authStatus === 'loading' || isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
@@ -301,7 +280,6 @@ export default function LiveClassroomPage() {
     )
   }
 
-  // Check if user is authenticated
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
@@ -342,6 +320,7 @@ export default function LiveClassroomPage() {
     />
   )
 }
+
 function LiveRoom({
   roomId,
   role,
@@ -401,13 +380,13 @@ function LiveRoom({
 
   useEffect(() => {
     if (localVideoRef.current && localPreviewStream) {
-      localVideoRef.current.srcObject = localPreviewStream
+      ;(localVideoRef.current as HTMLVideoElement).srcObject = localPreviewStream
     }
   }, [localPreviewStream])
 
   useEffect(() => {
     if (remoteVideoRef.current && remotePreviewStream) {
-      remoteVideoRef.current.srcObject = remotePreviewStream
+      ;(remoteVideoRef.current as HTMLVideoElement).srcObject = remotePreviewStream
     }
   }, [remotePreviewStream])
 
@@ -415,6 +394,7 @@ function LiveRoom({
     const streams = Array.from(remoteStreamsRef.current.values())
     setRemotePreviewStream(streams[0] ?? null)
   }, [])
+
   const cleanupPeer = useCallback(
     (peerId: string) => {
       const peer = peersRef.current.get(peerId)
@@ -502,9 +482,7 @@ function LiveRoom({
   const sendSignal = useCallback(
     (payload: Record<string, unknown>) => {
       const controller = signalingRef.current
-      if (!controller) {
-        return
-      }
+      if (!controller) return
 
       const target = typeof payload.target === 'string' ? (payload.target as string) : undefined
 
@@ -518,6 +496,7 @@ function LiveRoom({
     },
     [roomId]
   )
+
   const handlePeerJoin = useCallback(
     async (viewerId: string) => {
       if (!localStreamRef.current) {
@@ -545,10 +524,7 @@ function LiveRoom({
         }
 
         peer.onconnectionstatechange = () => {
-          if (
-            peer &&
-            ['failed', 'disconnected', 'closed'].includes(peer.connectionState)
-          ) {
+          if (peer && ['failed', 'disconnected', 'closed'].includes(peer.connectionState)) {
             cleanupPeer(viewerId)
           }
         }
@@ -576,6 +552,7 @@ function LiveRoom({
     },
     [cleanupPeer, iceServers, sendSignal, updateRemotePreview]
   )
+
   const handleHostMessage = useCallback(
     async (message: SignalingServerMessage) => {
       switch (message.type) {
@@ -600,9 +577,7 @@ function LiveRoom({
           break
         }
         case 'left': {
-          if (message.peerId === clientIdRef.current) {
-            break
-          }
+          if (message.peerId === clientIdRef.current) break
           if ((message.role ?? 'viewer') === 'viewer') {
             cleanupPeer(message.peerId)
             setViewerCount(Math.max(0, message.participants - 1))
@@ -612,23 +587,17 @@ function LiveRoom({
         }
         case 'peer': {
           const payload = message.payload
-          if (!isSignalPayload(payload)) {
-            break
-          }
+          if (!isSignalPayload(payload)) break
 
           if (payload.type === 'answer' && payload.target === clientIdRef.current) {
-            if (typeof payload.sdp !== 'string') {
-              break
-            }
+            if (typeof payload.sdp !== 'string') break
             const peer = peersRef.current.get(message.from)
             if (!peer) {
               console.warn('Peer not found for answer', message.from)
               break
             }
             try {
-              await peer.setRemoteDescription(
-                new RTCSessionDescription({ type: 'answer', sdp: payload.sdp })
-              )
+              await peer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: payload.sdp }))
             } catch (error) {
               console.error('Failed to set remote description (answer)', error)
             }
@@ -637,9 +606,7 @@ function LiveRoom({
 
           if (payload.type === 'ice' && payload.target === clientIdRef.current) {
             const peer = peersRef.current.get(message.from)
-            if (!peer) {
-              break
-            }
+            if (!peer) break
             try {
               await peer.addIceCandidate(new RTCIceCandidate(payload.candidate as RTCIceCandidateInit))
             } catch (error) {
@@ -656,6 +623,7 @@ function LiveRoom({
     },
     [cleanupPeer, handlePeerJoin]
   )
+
   const handleViewerMessage = useCallback(
     async (message: SignalingServerMessage) => {
       switch (message.type) {
@@ -664,13 +632,9 @@ function LiveRoom({
             setErrorMessage(null)
             setConnectionStatus('connected')
             setViewerCount(Math.max(0, message.participants - 1))
-            const hostPeer = (message.peers ?? []).find(
-              (peer) => (peer.role ?? 'viewer') === 'host'
-            )
+            const hostPeer = (message.peers ?? []).find((peer) => (peer.role ?? 'viewer') === 'host')
             hostPeerIdRef.current = hostPeer?.peerId ?? hostPeerIdRef.current
-            setStatusMessage(
-              hostPeer ? 'Menunggu stream dari guru...' : 'Guru belum bergabung ke kelas'
-            )
+            setStatusMessage(hostPeer ? 'Menunggu stream dari guru...' : 'Guru belum bergabung ke kelas')
           } else if ((message.role ?? 'viewer') === 'host') {
             hostPeerIdRef.current = message.peerId
             setStatusMessage('Guru bergabung, menunggu stream...')
@@ -681,15 +645,11 @@ function LiveRoom({
         }
         case 'peer': {
           const payload = message.payload
-          if (!isSignalPayload(payload)) {
-            break
-          }
+          if (!isSignalPayload(payload)) break
 
           if (payload.type === 'offer' && payload.target === clientIdRef.current) {
             try {
-              if (typeof payload.sdp !== 'string') {
-                break
-              }
+              if (typeof payload.sdp !== 'string') break
               hostPeerIdRef.current = message.from
               let peer = viewerPeerRef.current
               if (!peer) {
@@ -714,20 +674,14 @@ function LiveRoom({
                 }
 
                 peer.onconnectionstatechange = () => {
-                  if (!viewerPeerRef.current) {
-                    return
-                  }
-                  if (
-                    ['failed', 'disconnected'].includes(viewerPeerRef.current.connectionState)
-                  ) {
+                  if (!viewerPeerRef.current) return
+                  if (['failed', 'disconnected'].includes(viewerPeerRef.current.connectionState)) {
                     setStatusMessage('Koneksi ke guru terputus. Mencoba kembali...')
                   }
                 }
               }
 
-              await peer.setRemoteDescription(
-                new RTCSessionDescription({ type: 'offer', sdp: payload.sdp })
-              )
+              await peer.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: payload.sdp }))
               const answer = await peer.createAnswer()
               await peer.setLocalDescription(answer)
               sendSignal({
@@ -742,9 +696,7 @@ function LiveRoom({
           }
 
           if (payload.type === 'ice' && payload.target === clientIdRef.current) {
-            if (!viewerPeerRef.current) {
-              break
-            }
+            if (!viewerPeerRef.current) break
             try {
               await viewerPeerRef.current.addIceCandidate(
                 new RTCIceCandidate(payload.candidate as RTCIceCandidateInit)
@@ -785,6 +737,7 @@ function LiveRoom({
     },
     [iceServers, sendSignal]
   )
+
   const connectSignaling = useCallback(
     () =>
       new Promise<void>((resolve, reject) => {
@@ -799,14 +752,12 @@ function LiveRoom({
         }
 
         let settled = false
-
         const settleResolve = () => {
           if (!settled) {
             settled = true
             resolve()
           }
         }
-
         const settleReject = (error: Error) => {
           if (!settled) {
             settled = true
@@ -818,12 +769,9 @@ function LiveRoom({
           const controller = createSignaling({
             room: roomId,
             peerId: clientIdRef.current,
-            joinPayload: { role },
+            role,
             onMessage: (data) => {
-              if (!isMountedRef.current) {
-                return
-              }
-
+              if (!isMountedRef.current) return
               try {
                 const parsed = data as SignalingServerMessage
                 if (parsed.type === 'pong') {
@@ -839,10 +787,7 @@ function LiveRoom({
               }
             },
             onStatus: (status) => {
-              if (!isMountedRef.current) {
-                return
-              }
-
+              if (!isMountedRef.current) return
               switch (status) {
                 case 'connecting': {
                   setConnectionStatus('connecting')
@@ -897,10 +842,9 @@ function LiveRoom({
       }),
     [handleHostMessage, handleViewerMessage, role, roomId]
   )
+
   const restoreCameraTrack = useCallback(() => {
-    if (!localStreamRef.current || !cameraVideoTrackRef.current) {
-      return
-    }
+    if (!localStreamRef.current || !cameraVideoTrackRef.current) return
 
     const localStream = localStreamRef.current
     const videoTracks = localStream.getVideoTracks()
@@ -923,9 +867,7 @@ function LiveRoom({
   }, [])
 
   const stopShareScreen = useCallback(() => {
-    if (!isSharingScreen) {
-      return
-    }
+    if (!isSharingScreen) return
     if (screenStreamRef.current) {
       screenStreamRef.current.getTracks().forEach((track) => track.stop())
       screenStreamRef.current = null
@@ -934,9 +876,7 @@ function LiveRoom({
   }, [isSharingScreen, restoreCameraTrack])
 
   const handleToggleShareScreen = useCallback(async () => {
-    if (role !== 'host' || !localStreamRef.current) {
-      return
-    }
+    if (role !== 'host' || !localStreamRef.current) return
 
     if (isSharingScreen) {
       stopShareScreen()
@@ -944,10 +884,7 @@ function LiveRoom({
     }
 
     try {
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false
-      })
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
       const screenTrack = displayStream.getVideoTracks()[0]
       if (!screenTrack) {
         setErrorMessage('Tidak dapat mengambil layar untuk dibagikan')
@@ -978,6 +915,7 @@ function LiveRoom({
       setErrorMessage('Gagal memulai share screen')
     }
   }, [isSharingScreen, role, stopShareScreen])
+
   const initializeLocalStream = useCallback(async () => {
     setStatusMessage('Meminta izin kamera & mikrofon...')
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -988,9 +926,7 @@ function LiveRoom({
   }, [])
 
   const handleStartClass = useCallback(async () => {
-    if (role !== 'host' || isLive) {
-      return
-    }
+    if (role !== 'host' || isLive) return
 
     try {
       setErrorMessage(null)
@@ -998,13 +934,8 @@ function LiveRoom({
       await initializeLocalStream()
 
       setStatusMessage('Mempersiapkan sesi live...')
-      const startResponse = await fetch(`/api/classroom/${roomId}/session/start`, {
-        method: 'POST'
-      })
-
-      if (!startResponse.ok) {
-        throw new Error('Gagal membuat sesi live')
-      }
+      const startResponse = await fetch(`/api/classroom/${roomId}/session/start`, { method: 'POST' })
+      if (!startResponse.ok) throw new Error('Gagal membuat sesi live')
 
       const payload = (await startResponse.json()) as { session: { id: string } }
       setSessionId(payload.session.id)
@@ -1015,9 +946,7 @@ function LiveRoom({
     } catch (error) {
       console.error('Failed to start class', error)
       setConnectionStatus('error')
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Gagal memulai kelas langsung'
-      )
+      setErrorMessage(error instanceof Error ? error.message : 'Gagal memulai kelas langsung')
       teardownConnections()
       setIsLive(false)
       setSessionId(null)
@@ -1026,18 +955,12 @@ function LiveRoom({
 
   const finalizeSession = useCallback(
     async (recordUrl?: string | null) => {
-      if (!sessionId) {
-        return
-      }
-
+      if (!sessionId) return
       try {
         await fetch(`/api/classroom/${roomId}/session/end`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId,
-            recordingUrl: recordUrl ?? recordingUrl ?? null
-          })
+          body: JSON.stringify({ sessionId, recordingUrl: recordUrl ?? recordingUrl ?? null })
         })
       } catch (error) {
         console.error('Failed to finalize session', error)
@@ -1048,10 +971,7 @@ function LiveRoom({
   )
 
   const handleStopRecording = useCallback(async () => {
-    if (role !== 'host' || !isRecording) {
-      return
-    }
-
+    if (role !== 'host' || !isRecording) return
     try {
       const blob = await stopRecording()
       if (blob) {
@@ -1068,11 +988,9 @@ function LiveRoom({
       setErrorMessage('Gagal menyimpan rekaman')
     }
   }, [isRecording, role, roomId, stopRecording])
-  const handleEndClass = useCallback(async () => {
-    if (role !== 'host' || !isLive) {
-      return
-    }
 
+  const handleEndClass = useCallback(async () => {
+    if (role !== 'host' || !isLive) return
     try {
       setStatusMessage('Mengakhiri sesi live...')
       if (isRecording) {
@@ -1088,11 +1006,9 @@ function LiveRoom({
       setStatusMessage('Kelas telah diakhiri')
     }
   }, [finalizeSession, handleStopRecording, isLive, isRecording, role, teardownConnections])
-  const handleStartRecording = useCallback(async () => {
-    if (role !== 'host' || !localStreamRef.current || isRecording) {
-      return
-    }
 
+  const handleStartRecording = useCallback(async () => {
+    if (role !== 'host' || !localStreamRef.current || isRecording) return
     try {
       await startRecording(localStreamRef.current)
       setStatusMessage('Perekaman dimulai')
@@ -1102,11 +1018,9 @@ function LiveRoom({
       setErrorMessage('Gagal memulai perekaman')
     }
   }, [isRecording, role, startRecording])
-  const handleJoinClass = useCallback(async () => {
-    if (role !== 'viewer') {
-      return
-    }
 
+  const handleJoinClass = useCallback(async () => {
+    if (role !== 'viewer') return
     try {
       setErrorMessage(null)
       setStatusMessage('Menghubungkan ke kelas...')
@@ -1116,6 +1030,7 @@ function LiveRoom({
       setErrorMessage('Tidak dapat terhubung ke sesi live')
     }
   }, [connectSignaling, role])
+
   const statusLabel = useMemo(() => {
     switch (connectionStatus) {
       case 'initializing':
@@ -1144,7 +1059,10 @@ function LiveRoom({
         return 'bg-slate-700/40 text-slate-300 border border-slate-600/60'
     }
   }, [connectionStatus])
-  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -1171,7 +1089,7 @@ function LiveRoom({
             </div>
           </div>
         )}
-        
+
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-3 text-sm text-slate-300">
@@ -1240,12 +1158,7 @@ function LiveRoom({
               {recordingUrl && (
                 <div className="mt-4 flex items-center gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-200">
                   <CheckCircle2 className="h-5 w-5" />
-                  <a
-                    href={recordingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline"
-                  >
+                  <a href={recordingUrl} target="_blank" rel="noreferrer" className="underline">
                     Rekaman tersedia di Cloudinary
                   </a>
                 </div>
@@ -1375,4 +1288,3 @@ const VideoPreview = forwardRef<HTMLVideoElement, VideoPreviewProps>(
 )
 
 VideoPreview.displayName = 'VideoPreview'
-

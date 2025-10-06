@@ -12,37 +12,38 @@ type ServerMessage =
       role?: Role
       peers?: Array<{ peerId: string; role?: Role }>
     }
-  | { type: 'left'; room: string; participants: number; peerId: string; role?: Role }
+  | {
+      type: 'left'
+      room: string
+      participants: number
+      peerId: string
+      role?: Role
+    }
   | { type: 'peer'; from: string; payload: unknown }
   | { type: 'error'; message: string }
-  | { type: 'pong' }
+  | { type: 'ping'; timestamp: number }
 
 type ClientMessage =
-  | { type: 'join'; room: string; peerId: string; role?: Role }
-  | { type: 'signal'; room: string; to?: string; from: string; payload: unknown }
-  | { type: 'ping' }
-  | { type: 'leave'; room: string; peerId: string }
+  | { type: 'join'; room: string; peerId?: string; role?: Role }
+  | { type: 'signal'; room: string; from?: string; to?: string; payload: unknown }
+  | { type: 'pong' }
+  | { type: 'leave'; room: string; peerId?: string }
 
-type PeerMeta = { peerId: string; role?: Role }
+type PeerMetadata = { peerId: string; role?: Role }
 
 type GlobalState = {
   __rooms?: Map<string, Set<WebSocket>>
-  __roomPeers?: Map<string, Map<string, { socket: WebSocket; meta: PeerMeta }>>
-  __socketMeta?: Map<WebSocket, { room: string; meta: PeerMeta }>
+  __roomPeers?: Map<string, Map<WebSocket, PeerMetadata>>
 }
 
 const g = globalThis as unknown as GlobalState
 if (!g.__rooms) g.__rooms = new Map()
 if (!g.__roomPeers) g.__roomPeers = new Map()
-if (!g.__socketMeta) g.__socketMeta = new Map()
 
 const rooms = g.__rooms
 const roomPeers = g.__roomPeers
-const socketMeta = g.__socketMeta
-const OPEN_STATE = (WebSocket as { OPEN?: number }).OPEN ?? 1
-const decoder = new TextDecoder()
 
-function getRoomPeerRegistry(room: string) {
+function getPeerRegistry(room: string) {
   let registry = roomPeers.get(room)
   if (!registry) {
     registry = new Map()
@@ -57,25 +58,28 @@ function broadcast(room: string, data: ServerMessage, except?: WebSocket) {
   const payload = JSON.stringify(data)
   for (const socket of sockets) {
     if (except && socket === except) continue
-    const readyState = (socket as { readyState?: number }).readyState
-    if (typeof readyState === 'number' && readyState !== OPEN_STATE) continue
     try {
       socket.send(payload)
-    } catch {}
+    } catch {
+      // noop: ignore broken socket
+    }
   }
 }
 
-function sendToPeer(room: string, peerId: string, data: ServerMessage, except?: WebSocket) {
+function sendToPeer(room: string, targetPeerId: string, data: ServerMessage) {
   const registry = roomPeers.get(room)
   if (!registry) return
-  const entry = registry.get(peerId)
-  if (!entry) return
-  if (except && entry.socket === except) return
-  const readyState = (entry.socket as { readyState?: number }).readyState
-  if (typeof readyState === 'number' && readyState !== OPEN_STATE) return
-  try {
-    entry.socket.send(JSON.stringify(data))
-  } catch {}
+  const payload = JSON.stringify(data)
+  for (const [socket, meta] of registry.entries()) {
+    if (meta.peerId === targetPeerId) {
+      try {
+        socket.send(payload)
+      } catch {
+        // noop
+      }
+      return
+    }
+  }
 }
 
 export function GET(request: Request) {
@@ -87,7 +91,6 @@ export function GET(request: Request) {
   const globalWithPair = globalThis as typeof globalThis & {
     WebSocketPair?: new () => { 0: WebSocket; 1: WebSocket }
   }
-
   if (!globalWithPair.WebSocketPair) {
     return new Response('WebSocket not supported', { status: 500 })
   }
@@ -100,18 +103,30 @@ export function GET(request: Request) {
   let currentPeerId = `peer_${Math.random().toString(36).slice(2, 9)}`
   let currentRole: Role | undefined
 
+  // --- Heartbeat: server -> ping, client -> pong ---
+  let heartbeatAlive = true
+  const HEARTBEAT_MS = 25_000
+  const heartbeatTimer = setInterval(() => {
+    try {
+      if ((ws as WebSocket).readyState !== ws.OPEN) return
+      if (!heartbeatAlive) {
+        try {
+          ws.close(4000, 'No heartbeat (pong) received')
+        } catch {}
+        return
+      }
+      heartbeatAlive = false
+      ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() } satisfies ServerMessage))
+    } catch {
+      // ignore send errors
+    }
+  }, HEARTBEAT_MS)
+
   const leaveRoom = () => {
     if (!currentRoom) return
     const sockets = rooms.get(currentRoom)
     const registry = roomPeers.get(currentRoom)
-    const metaEntry = socketMeta.get(ws)
-
-    if (registry && metaEntry) {
-      registry.delete(metaEntry.meta.peerId)
-      if (registry.size === 0) {
-        roomPeers.delete(currentRoom)
-      }
-    }
+    const meta = registry?.get(ws)
 
     if (sockets) {
       sockets.delete(ws)
@@ -120,31 +135,39 @@ export function GET(request: Request) {
       }
     }
 
-    if (metaEntry) {
-      socketMeta.delete(ws)
-      console.log('[ws] leave', metaEntry.meta.peerId, metaEntry.meta.role, 'room', currentRoom)
+    if (registry) {
+      registry.delete(ws)
+      if (registry.size === 0) {
+        roomPeers.delete(currentRoom)
+      }
+    }
+
+    if (meta) {
+      console.log('[ws] leave', currentRoom, meta.peerId, meta.role, 'participants', sockets?.size ?? 0)
       broadcast(currentRoom, {
         type: 'left',
         room: currentRoom,
         participants: sockets?.size ?? 0,
-        peerId: metaEntry.meta.peerId,
-        role: metaEntry.meta.role
+        peerId: meta.peerId,
+        role: meta.role
       })
     }
 
     currentRoom = null
   }
 
-  ws.addEventListener('message', (event: MessageEvent) => {
+  const broadcastServerMessage = (room: string, data: ServerMessage) => {
+    broadcast(room, data, ws)
+  }
+
+  ws.addEventListener('message', (ev: MessageEvent) => {
     try {
-      const raw =
-        typeof event.data === 'string'
-          ? event.data
-          : decoder.decode(event.data as ArrayBuffer)
+      const raw = typeof ev.data === 'string' ? ev.data : new TextDecoder().decode(ev.data as ArrayBuffer)
       const msg = JSON.parse(raw) as ClientMessage
 
-      if (msg.type === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong' } satisfies ServerMessage))
+      if (msg.type === 'pong') {
+        // client replied to heartbeat
+        heartbeatAlive = true
         return
       }
 
@@ -157,27 +180,23 @@ export function GET(request: Request) {
 
         currentRoom = room
         currentPeerId = msg.peerId?.trim() || currentPeerId
-        currentRole = msg.role
+        currentRole = msg.role === 'host' ? 'host' : 'viewer'
 
         let sockets = rooms.get(room)
         if (!sockets) {
           sockets = new Set()
           rooms.set(room, sockets)
         }
-
-        const registry = getRoomPeerRegistry(room)
-        const existingPeers: Array<{ peerId: string; role?: Role }> = []
-        for (const { meta } of registry.values()) {
-          if (meta.peerId !== currentPeerId) {
-            existingPeers.push({ peerId: meta.peerId, role: meta.role })
-          }
-        }
+        const registry = getPeerRegistry(room)
+        const existingPeers = Array.from(registry.values()).map((peer) => ({
+          peerId: peer.peerId,
+          role: peer.role
+        }))
 
         sockets.add(ws)
-        registry.set(currentPeerId, { socket: ws, meta: { peerId: currentPeerId, role: currentRole } })
-        socketMeta.set(ws, { room, meta: { peerId: currentPeerId, role: currentRole } })
+        registry.set(ws, { peerId: currentPeerId, role: currentRole })
 
-        console.log('[ws] join', currentPeerId, currentRole, 'room', room, 'participants', sockets.size)
+        console.log('[ws] join', room, currentPeerId, currentRole, 'participants', sockets.size)
 
         ws.send(
           JSON.stringify({
@@ -190,24 +209,18 @@ export function GET(request: Request) {
           } satisfies ServerMessage)
         )
 
-        broadcast(
+        broadcastServerMessage(room, {
+          type: 'joined',
           room,
-          {
-            type: 'joined',
-            room,
-            participants: sockets.size,
-            peerId: currentPeerId,
-            role: currentRole
-          },
-          ws
-        )
+          participants: sockets.size,
+          peerId: currentPeerId,
+          role: currentRole
+        })
         return
       }
 
       if (msg.type === 'leave') {
-        if (msg.peerId === currentPeerId) {
-          leaveRoom()
-        }
+        leaveRoom()
         return
       }
 
@@ -215,31 +228,33 @@ export function GET(request: Request) {
         if (!currentRoom) return
         const payload: ServerMessage = {
           type: 'peer',
-          from: msg.from || currentPeerId,
+          from: msg.from ?? currentPeerId,
           payload: msg.payload
         }
 
         if (msg.to) {
-          sendToPeer(currentRoom, msg.to, payload, ws)
+          sendToPeer(currentRoom, msg.to, payload)
         } else {
-          broadcast(currentRoom, payload, ws)
+          broadcastServerMessage(currentRoom, payload)
         }
         return
       }
-    } catch (error) {
+    } catch {
       try {
         ws.send(JSON.stringify({ type: 'error', message: 'invalid message' } satisfies ServerMessage))
       } catch {}
     }
   })
 
-  ws.addEventListener('close', () => {
+  const cleanup = () => {
+    try {
+      clearInterval(heartbeatTimer)
+    } catch {}
     leaveRoom()
-  })
+  }
 
-  ws.addEventListener('error', () => {
-    leaveRoom()
-  })
+  ws.addEventListener('close', cleanup)
+  ws.addEventListener('error', cleanup)
 
   return new Response(null, { status: 101, webSocket: client } as ResponseInit & {
     webSocket: WebSocket
