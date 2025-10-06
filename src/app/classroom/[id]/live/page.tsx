@@ -23,40 +23,161 @@ import { uploadRecordingToCloudinary } from '@/lib/cloudinaryUpload'
 
 type Role = 'host' | 'viewer'
 
-type ServerMessage =
+type RemotePeer = {
+  peerId: string
+  role?: Role
+}
+
+type SignalingServerMessage =
   | {
       type: 'joined'
-      clientId: string
-      role: Role
-      peers: Array<{ clientId: string; role: Role }>
+      room: string
+      participants: number
+      peerId: string
+      role?: Role
+      peers?: RemotePeer[]
     }
   | {
-      type: 'peer-joined'
-      clientId: string
-      role: Role
+      type: 'left'
+      room: string
+      participants: number
+      peerId: string
+      role?: Role
     }
-  | {
-      type: 'peer-left'
-      clientId: string
-    }
-  | {
-      type: 'offer' | 'answer'
-      clientId: string
-      target: string
-      sdp: string
-    }
-  | {
-      type: 'ice'
-      clientId: string
-      target: string
-      candidate: RTCIceCandidateInit
-    }
-  | {
-      type: 'error'
-      message: string
-    }
+  | { type: 'peer'; from: string; payload: unknown }
+  | { type: 'error'; message: string }
+  | { type: 'pong' }
+
+type SignalPayload = {
+  type: string
+  target?: string
+  sdp?: string
+  candidate?: RTCIceCandidateInit
+  [key: string]: unknown
+}
+
+function isSignalPayload(value: unknown): value is SignalPayload {
+  return typeof value === 'object' && value !== null && 'type' in value
+}
 
 type ConnectionStatus = 'idle' | 'initializing' | 'connecting' | 'connected' | 'error'
+
+function makeWsUrl(path = '/api/ws') {
+  const loc = window.location
+  const isSecure = loc.protocol === 'https:'
+  const scheme = isSecure ? 'wss' : 'ws'
+  return `${scheme}://${loc.host}${path}`
+}
+
+type WsOpts = {
+  room: string
+  peerId: string
+  joinPayload?: Record<string, unknown>
+  onMessage: (data: unknown) => void
+  onStatus?: (s: 'connecting' | 'open' | 'closed' | 'error' | 'reconnecting') => void
+}
+
+function createSignaling({ room, peerId, joinPayload, onMessage, onStatus }: WsOpts) {
+  let ws: WebSocket | null = null
+  let retry = 0
+  let pingTimer: number | null = null
+  let reconnectTimer: number | null = null
+  let closedManually = false
+
+  const connect = () => {
+    onStatus?.('connecting')
+    ws = new WebSocket(makeWsUrl('/api/ws'))
+
+    ws.onopen = () => {
+      retry = 0
+      closedManually = false
+      onStatus?.('open')
+      ws!.send(
+        JSON.stringify({
+          type: 'join',
+          room,
+          peerId,
+          ...(joinPayload ?? {})
+        })
+      )
+      if (reconnectTimer !== null) {
+        window.clearTimeout(reconnectTimer)
+        reconnectTimer = null
+      }
+      pingTimer = window.setInterval(() => {
+        try {
+          ws?.send(JSON.stringify({ type: 'ping' }))
+        } catch {}
+      }, 25_000)
+    }
+
+    ws.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data as string)
+        onMessage?.(data)
+      } catch {}
+    }
+
+    const scheduleReconnect = () => {
+      if (closedManually) {
+        return
+      }
+      if (pingTimer !== null) {
+        window.clearInterval(pingTimer)
+        pingTimer = null
+      }
+      if (reconnectTimer !== null) {
+        window.clearTimeout(reconnectTimer)
+      }
+      onStatus?.('reconnecting')
+      const delay = Math.min(30_000, 1_000 * Math.pow(2, retry++))
+      reconnectTimer = window.setTimeout(connect, delay)
+    }
+
+    ws.onerror = () => {
+      onStatus?.('error')
+      try {
+        ws?.close()
+      } catch {}
+    }
+
+    ws.onclose = () => {
+      onStatus?.('closed')
+      if (pingTimer !== null) {
+        window.clearInterval(pingTimer)
+        pingTimer = null
+      }
+      ws = null
+      scheduleReconnect()
+    }
+  }
+
+  const send = (payload: unknown) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(payload))
+    }
+  }
+
+  const close = () => {
+    closedManually = true
+    if (pingTimer !== null) {
+      window.clearInterval(pingTimer)
+      pingTimer = null
+    }
+    if (reconnectTimer !== null) {
+      window.clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+    try {
+      ws?.close()
+    } catch {}
+    ws = null
+  }
+
+  connect()
+
+  return { send, close }
+}
 
 type VideoPreviewProps = {
   stream: MediaStream | null
@@ -236,7 +357,8 @@ function LiveRoom({
       : Math.random().toString(36).slice(2)
   )
   const clientIdRef = useRef(clientId)
-  const wsRef = useRef<WebSocket | null>(null)
+  const signalingRef = useRef<ReturnType<typeof createSignaling> | null>(null)
+  const isMountedRef = useRef(true)
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const remoteStreamsRef = useRef<Map<string, MediaStream>>(new Map())
   const localStreamRef = useRef<MediaStream | null>(null)
@@ -314,8 +436,19 @@ function LiveRoom({
   )
 
   const teardownConnections = useCallback(() => {
-    wsRef.current?.close()
-    wsRef.current = null
+    const controller = signalingRef.current
+    if (controller) {
+      try {
+        controller.send({
+          type: 'leave',
+          room: roomId,
+          peerId: clientIdRef.current
+        })
+      } catch {}
+      controller.close()
+    }
+
+    signalingRef.current = null
 
     peersRef.current.forEach((_, peerId) => {
       cleanupPeer(peerId)
@@ -356,24 +489,32 @@ function LiveRoom({
     setLocalPreviewStream(null)
     setIsSharingScreen(false)
     resetRecorder()
-  }, [cleanupPeer, resetRecorder])
+  }, [cleanupPeer, resetRecorder, roomId])
 
-  useEffect(() => () => teardownConnections(), [teardownConnections])
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      teardownConnections()
+    }
+  }, [teardownConnections])
 
   const sendSignal = useCallback(
     (payload: Record<string, unknown>) => {
-      const socket = wsRef.current
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
+      const controller = signalingRef.current
+      if (!controller) {
         return
       }
 
-      socket.send(
-        JSON.stringify({
-          ...payload,
-          roomId,
-          clientId: clientIdRef.current
-        })
-      )
+      const target = typeof payload.target === 'string' ? (payload.target as string) : undefined
+
+      controller.send({
+        type: 'signal',
+        room: roomId,
+        from: clientIdRef.current,
+        to: target,
+        payload: { ...payload }
+      })
     },
     [roomId]
   )
@@ -436,56 +577,74 @@ function LiveRoom({
     [cleanupPeer, iceServers, sendSignal, updateRemotePreview]
   )
   const handleHostMessage = useCallback(
-    async (message: ServerMessage) => {
+    async (message: SignalingServerMessage) => {
       switch (message.type) {
         case 'joined': {
-          setConnectionStatus('connected')
-          setStatusMessage('Siaran langsung siap. Undang siswa untuk bergabung.')
-          const viewerPeers = message.peers.filter(
-            (peer) => peer.clientId !== clientIdRef.current && peer.role === 'viewer'
-          )
-          setViewerCount(viewerPeers.length)
-          await Promise.all(viewerPeers.map((peer) => handlePeerJoin(peer.clientId)))
-          break
-        }
-        case 'peer-joined': {
-          if (message.role === 'viewer') {
-            setViewerCount((count) => count + 1)
-            setStatusMessage('Peserta baru bergabung ke kelas')
-            await handlePeerJoin(message.clientId)
-          }
-          break
-        }
-        case 'peer-left': {
-          cleanupPeer(message.clientId)
-          setViewerCount((count) => Math.max(0, count - 1))
-          setStatusMessage('Seorang peserta meninggalkan kelas')
-          break
-        }
-        case 'answer': {
-          const peer = peersRef.current.get(message.clientId)
-          if (!peer) {
-            console.warn('Peer not found for answer', message.clientId)
-            break
-          }
-          try {
-            await peer.setRemoteDescription(
-              new RTCSessionDescription({ type: 'answer', sdp: message.sdp })
+          if (message.peerId === clientIdRef.current) {
+            setErrorMessage(null)
+            setConnectionStatus('connected')
+            setStatusMessage('Siaran langsung siap. Undang siswa untuk bergabung.')
+            const viewerPeers = (message.peers ?? []).filter(
+              (peer) => peer.peerId !== clientIdRef.current && (peer.role ?? 'viewer') === 'viewer'
             )
-          } catch (error) {
-            console.error('Failed to set remote description (answer)', error)
+            setViewerCount(viewerPeers.length)
+            await Promise.all(viewerPeers.map((peer) => handlePeerJoin(peer.peerId)))
+          } else if ((message.role ?? 'viewer') === 'viewer') {
+            const nextCount = Math.max(0, message.participants - 1)
+            setViewerCount(nextCount)
+            setStatusMessage('Peserta baru bergabung ke kelas')
+            if (!peersRef.current.has(message.peerId)) {
+              await handlePeerJoin(message.peerId)
+            }
           }
           break
         }
-        case 'ice': {
-          const peer = peersRef.current.get(message.clientId)
-          if (!peer) {
+        case 'left': {
+          if (message.peerId === clientIdRef.current) {
             break
           }
-          try {
-            await peer.addIceCandidate(new RTCIceCandidate(message.candidate))
-          } catch (error) {
-            console.error('Failed to add ICE candidate', error)
+          if ((message.role ?? 'viewer') === 'viewer') {
+            cleanupPeer(message.peerId)
+            setViewerCount(Math.max(0, message.participants - 1))
+            setStatusMessage('Seorang peserta meninggalkan kelas')
+          }
+          break
+        }
+        case 'peer': {
+          const payload = message.payload
+          if (!isSignalPayload(payload)) {
+            break
+          }
+
+          if (payload.type === 'answer' && payload.target === clientIdRef.current) {
+            if (typeof payload.sdp !== 'string') {
+              break
+            }
+            const peer = peersRef.current.get(message.from)
+            if (!peer) {
+              console.warn('Peer not found for answer', message.from)
+              break
+            }
+            try {
+              await peer.setRemoteDescription(
+                new RTCSessionDescription({ type: 'answer', sdp: payload.sdp })
+              )
+            } catch (error) {
+              console.error('Failed to set remote description (answer)', error)
+            }
+            break
+          }
+
+          if (payload.type === 'ice' && payload.target === clientIdRef.current) {
+            const peer = peersRef.current.get(message.from)
+            if (!peer) {
+              break
+            }
+            try {
+              await peer.addIceCandidate(new RTCIceCandidate(payload.candidate as RTCIceCandidateInit))
+            } catch (error) {
+              console.error('Failed to add ICE candidate', error)
+            }
           }
           break
         }
@@ -498,87 +657,106 @@ function LiveRoom({
     [cleanupPeer, handlePeerJoin]
   )
   const handleViewerMessage = useCallback(
-    async (message: ServerMessage) => {
+    async (message: SignalingServerMessage) => {
       switch (message.type) {
         case 'joined': {
-          setConnectionStatus('connected')
-          const viewers = message.peers.filter((peer) => peer.role === 'viewer')
-          setViewerCount(viewers.length)
-          const hostPeer = message.peers.find((peer) => peer.role === 'host')
-          hostPeerIdRef.current = hostPeer?.clientId ?? null
-          setStatusMessage(
-            hostPeer ? 'Menunggu stream dari guru...' : 'Guru belum bergabung ke kelas'
-          )
-          break
-        }
-        case 'offer': {
-          try {
-            hostPeerIdRef.current = message.clientId
-            let peer = viewerPeerRef.current
-            if (!peer) {
-              peer = new RTCPeerConnection({ iceServers })
-              viewerPeerRef.current = peer
-
-              peer.onicecandidate = (event) => {
-                if (event.candidate) {
-                  sendSignal({
-                    type: 'ice',
-                    target: message.clientId,
-                    candidate: event.candidate.toJSON()
-                  })
-                }
-              }
-
-              peer.ontrack = (event) => {
-                if (event.streams[0]) {
-                  setRemotePreviewStream(event.streams[0])
-                  setStatusMessage('Terhubung dengan guru')
-                }
-              }
-
-              peer.onconnectionstatechange = () => {
-                if (!viewerPeerRef.current) {
-                  return
-                }
-                if (
-                  ['failed', 'disconnected'].includes(viewerPeerRef.current.connectionState)
-                ) {
-                  setStatusMessage('Koneksi ke guru terputus. Mencoba kembali...')
-                }
-              }
-            }
-
-            await peer.setRemoteDescription(
-              new RTCSessionDescription({ type: 'offer', sdp: message.sdp })
+          if (message.peerId === clientIdRef.current) {
+            setErrorMessage(null)
+            setConnectionStatus('connected')
+            setViewerCount(Math.max(0, message.participants - 1))
+            const hostPeer = (message.peers ?? []).find(
+              (peer) => (peer.role ?? 'viewer') === 'host'
             )
-            const answer = await peer.createAnswer()
-            await peer.setLocalDescription(answer)
-            sendSignal({
-              type: 'answer',
-              target: message.clientId,
-              sdp: answer.sdp
-            })
-          } catch (error) {
-            console.error('Failed to handle offer', error)
-            setErrorMessage('Gagal menerima stream dari guru')
+            hostPeerIdRef.current = hostPeer?.peerId ?? hostPeerIdRef.current
+            setStatusMessage(
+              hostPeer ? 'Menunggu stream dari guru...' : 'Guru belum bergabung ke kelas'
+            )
+          } else if ((message.role ?? 'viewer') === 'host') {
+            hostPeerIdRef.current = message.peerId
+            setStatusMessage('Guru bergabung, menunggu stream...')
+          } else if (message.peerId !== clientIdRef.current && (message.role ?? 'viewer') === 'viewer') {
+            setViewerCount(Math.max(0, message.participants - 1))
           }
           break
         }
-        case 'ice': {
-          if (!viewerPeerRef.current) {
+        case 'peer': {
+          const payload = message.payload
+          if (!isSignalPayload(payload)) {
             break
           }
-          try {
-            await viewerPeerRef.current.addIceCandidate(
-              new RTCIceCandidate(message.candidate)
-            )
-          } catch (error) {
-            console.error('Failed to add ICE candidate (viewer)', error)
+
+          if (payload.type === 'offer' && payload.target === clientIdRef.current) {
+            try {
+              if (typeof payload.sdp !== 'string') {
+                break
+              }
+              hostPeerIdRef.current = message.from
+              let peer = viewerPeerRef.current
+              if (!peer) {
+                peer = new RTCPeerConnection({ iceServers })
+                viewerPeerRef.current = peer
+
+                peer.onicecandidate = (event) => {
+                  if (event.candidate) {
+                    sendSignal({
+                      type: 'ice',
+                      target: message.from,
+                      candidate: event.candidate.toJSON()
+                    })
+                  }
+                }
+
+                peer.ontrack = (event) => {
+                  if (event.streams[0]) {
+                    setRemotePreviewStream(event.streams[0])
+                    setStatusMessage('Terhubung dengan guru')
+                  }
+                }
+
+                peer.onconnectionstatechange = () => {
+                  if (!viewerPeerRef.current) {
+                    return
+                  }
+                  if (
+                    ['failed', 'disconnected'].includes(viewerPeerRef.current.connectionState)
+                  ) {
+                    setStatusMessage('Koneksi ke guru terputus. Mencoba kembali...')
+                  }
+                }
+              }
+
+              await peer.setRemoteDescription(
+                new RTCSessionDescription({ type: 'offer', sdp: payload.sdp })
+              )
+              const answer = await peer.createAnswer()
+              await peer.setLocalDescription(answer)
+              sendSignal({
+                type: 'answer',
+                target: message.from,
+                sdp: answer.sdp
+              })
+            } catch (error) {
+              console.error('Failed to handle offer', error)
+              setErrorMessage('Gagal menerima stream dari guru')
+            }
+          }
+
+          if (payload.type === 'ice' && payload.target === clientIdRef.current) {
+            if (!viewerPeerRef.current) {
+              break
+            }
+            try {
+              await viewerPeerRef.current.addIceCandidate(
+                new RTCIceCandidate(payload.candidate as RTCIceCandidateInit)
+              )
+            } catch (error) {
+              console.error('Failed to add ICE candidate (viewer)', error)
+            }
           }
           break
         }
-        case 'peer-left': {
-          if (message.clientId === hostPeerIdRef.current) {
+        case 'left': {
+          if (message.peerId === hostPeerIdRef.current) {
             setStatusMessage('Guru keluar dari sesi. Menunggu untuk bergabung kembali...')
             hostPeerIdRef.current = null
             setRemotePreviewStream(null)
@@ -594,18 +772,8 @@ function LiveRoom({
               viewerPeerRef.current = null
             }
           }
-          if (message.clientId !== clientIdRef.current) {
-            setViewerCount((count) => Math.max(0, count - 1))
-          }
-          break
-        }
-        case 'peer-joined': {
-          if (message.role === 'viewer' && message.clientId !== clientIdRef.current) {
-            setViewerCount((count) => count + 1)
-          }
-          if (message.role === 'host') {
-            hostPeerIdRef.current = message.clientId
-            setStatusMessage('Guru bergabung, menunggu stream...')
+          if (message.peerId !== clientIdRef.current && (message.role ?? 'viewer') === 'viewer') {
+            setViewerCount(Math.max(0, message.participants - 1))
           }
           break
         }
@@ -617,73 +785,118 @@ function LiveRoom({
     },
     [iceServers, sendSignal]
   )
-  const connectWebSocket = useCallback(() => {
-    return new Promise<void>((resolve, reject) => {
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        resolve()
-        return
-      }
+  const connectSignaling = useCallback(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        if (typeof window === 'undefined') {
+          reject(new Error('WebSocket hanya tersedia di browser'))
+          return
+        }
 
-      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-      const url = `${protocol}://${window.location.host}/api/ws`
-      const socket = new WebSocket(url)
-      wsRef.current = socket
+        if (signalingRef.current) {
+          resolve()
+          return
+        }
 
-      socket.onopen = () => {
-        setConnectionStatus('connecting')
-        socket.send(
-          JSON.stringify({
-            type: 'join',
-            roomId,
-            clientId: clientIdRef.current,
-            role
-          })
-        )
-        resolve()
-      }
+        let settled = false
 
-      socket.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data) as ServerMessage
-          if (role === 'host') {
-            void handleHostMessage(payload)
-          } else {
-            void handleViewerMessage(payload)
+        const settleResolve = () => {
+          if (!settled) {
+            settled = true
+            resolve()
           }
+        }
+
+        const settleReject = (error: Error) => {
+          if (!settled) {
+            settled = true
+            reject(error)
+          }
+        }
+
+        try {
+          const controller = createSignaling({
+            room: roomId,
+            peerId: clientIdRef.current,
+            joinPayload: { role },
+            onMessage: (data) => {
+              if (!isMountedRef.current) {
+                return
+              }
+
+              try {
+                const parsed = data as SignalingServerMessage
+                if (parsed.type === 'pong') {
+                  return
+                }
+                if (role === 'host') {
+                  void handleHostMessage(parsed)
+                } else {
+                  void handleViewerMessage(parsed)
+                }
+              } catch (error) {
+                console.error('Failed to process signaling message', error)
+              }
+            },
+            onStatus: (status) => {
+              if (!isMountedRef.current) {
+                return
+              }
+
+              switch (status) {
+                case 'connecting': {
+                  setConnectionStatus('connecting')
+                  setStatusMessage('Menghubungkan ke server signaling...')
+                  break
+                }
+                case 'open': {
+                  setConnectionStatus('connecting')
+                  if (role === 'host') {
+                    setStatusMessage('Terhubung ke server signaling. Menyelaraskan peserta...')
+                  } else {
+                    setStatusMessage('Menghubungkan ke server signaling...')
+                  }
+                  settleResolve()
+                  break
+                }
+                case 'reconnecting': {
+                  setConnectionStatus('connecting')
+                  setStatusMessage('Koneksi signaling terputus. Mencoba lagi...')
+                  break
+                }
+                case 'error': {
+                  setConnectionStatus('error')
+                  const isLocalhost =
+                    window.location.hostname === 'localhost' ||
+                    window.location.hostname === '127.0.0.1'
+                  if (isLocalhost) {
+                    setErrorMessage(
+                      'WebSocket signaling memerlukan Edge Runtime. Jalankan di Vercel atau gunakan HTTPS saat pengembangan.'
+                    )
+                    setStatusMessage('Koneksi signaling tidak tersedia di localhost tanpa Edge Runtime.')
+                  } else {
+                    setErrorMessage('Koneksi signaling mengalami gangguan. Sistem akan mencoba menyambung ulang.')
+                    setStatusMessage('Koneksi signaling gagal. Menunggu percobaan ulang...')
+                  }
+                  settleReject(new Error('WebSocket error'))
+                  break
+                }
+                case 'closed': {
+                  if (!settled) {
+                    settleReject(new Error('WebSocket closed'))
+                  }
+                  break
+                }
+              }
+            }
+          })
+          signalingRef.current = controller
         } catch (error) {
-          console.error('Failed to parse signaling message', error)
+          settleReject(error instanceof Error ? error : new Error('WebSocket error'))
         }
-      }
-
-      socket.onerror = (event) => {
-        console.error('WebSocket error', event)
-        setConnectionStatus('error')
-        
-        // Check if running on localhost
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        
-        if (isLocalhost) {
-          setErrorMessage('WebSocket tidak support di local development. Deploy ke Vercel untuk menggunakan Live Streaming.')
-          console.warn('⚠️ WebSocket Edge Runtime hanya bekerja di production (Vercel/Cloudflare)')
-          console.warn('📌 Untuk menggunakan Live Classroom, deploy aplikasi ke Vercel')
-          console.warn('📌 Command: vercel --prod')
-        } else {
-          setErrorMessage('Koneksi signaling mengalami masalah. Coba refresh halaman.')
-        }
-        
-        reject(new Error('WebSocket error'))
-      }
-
-      socket.onclose = () => {
-        setConnectionStatus((current) => (current === 'connected' ? 'idle' : current))
-        if (role === 'host') {
-          setStatusMessage('Koneksi signaling ditutup')
-        } else {
-          setStatusMessage('Terputus dari server. Coba gabung ulang jika diperlukan.')
-        }
-      }
-    })
-  }, [handleHostMessage, handleViewerMessage, role, roomId])
+      }),
+    [handleHostMessage, handleViewerMessage, role, roomId]
+  )
   const restoreCameraTrack = useCallback(() => {
     if (!localStreamRef.current || !cameraVideoTrackRef.current) {
       return
@@ -796,7 +1009,7 @@ function LiveRoom({
       const payload = (await startResponse.json()) as { session: { id: string } }
       setSessionId(payload.session.id)
 
-      await connectWebSocket()
+      await connectSignaling()
       setIsLive(true)
       setStatusMessage('Siaran dimulai. Siswa dapat bergabung sekarang.')
     } catch (error) {
@@ -809,7 +1022,7 @@ function LiveRoom({
       setIsLive(false)
       setSessionId(null)
     }
-  }, [connectWebSocket, initializeLocalStream, isLive, role, roomId, teardownConnections])
+  }, [connectSignaling, initializeLocalStream, isLive, role, roomId, teardownConnections])
 
   const finalizeSession = useCallback(
     async (recordUrl?: string | null) => {
@@ -897,12 +1110,12 @@ function LiveRoom({
     try {
       setErrorMessage(null)
       setStatusMessage('Menghubungkan ke kelas...')
-      await connectWebSocket()
+      await connectSignaling()
     } catch (error) {
       console.error('Failed to join class', error)
       setErrorMessage('Tidak dapat terhubung ke sesi live')
     }
-  }, [connectWebSocket, role])
+  }, [connectSignaling, role])
   const statusLabel = useMemo(() => {
     switch (connectionStatus) {
       case 'initializing':
