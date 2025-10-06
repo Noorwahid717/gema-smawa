@@ -21,214 +21,28 @@ import { studentAuth } from '@/lib/student-auth'
 import { useRecorder } from '@/hooks/useRecorder'
 import { uploadRecordingToCloudinary } from '@/lib/cloudinaryUpload'
 
-type Role = 'host' | 'viewer'
+import { createSignaling } from './utils/signaling'
+import { resolveIceServers } from './utils/iceServers'
+import {
+  ConnectionStatus,
+  Role,
+  SignalingServerMessage,
+  isSignalPayload
+} from './utils/types'
+import { createDebugLogger } from './utils/debug'
 
-type RemotePeer = {
-  peerId: string
-  role?: Role
-}
-
-type SignalingServerMessage =
-  | {
-      type: 'joined'
-      room: string
-      participants: number
-      peerId: string
-      role?: Role
-      peers?: RemotePeer[]
-    }
-  | {
-      type: 'left'
-      room: string
-      participants: number
-      peerId: string
-      role?: Role
-    }
-  | { type: 'peer'; from: string; payload: unknown }
-  | { type: 'error'; message: string }
-  | { type: 'ping'; timestamp?: number } // server -> client
-  | { type: 'pong' } // (tidak dipakai oleh server, aman dibiarkan)
-
-type SignalPayload = {
-  type: string
-  target?: string
-  sdp?: string
-  candidate?: RTCIceCandidateInit
-  [key: string]: unknown
-}
-
-function isSignalPayload(value: unknown): value is SignalPayload {
-  return typeof value === 'object' && value !== null && 'type' in value
-}
-
-type ConnectionStatus = 'idle' | 'initializing' | 'connecting' | 'connected' | 'error'
-
-function makeWsUrl(path = '/api/ws') {
-  const loc = window.location
-  const isSecure = loc.protocol === 'https:'
-  const scheme = isSecure ? 'wss' : 'ws'
-  return `${scheme}://${loc.host}${path}`
-}
-
-type WsOpts = {
-  room: string
-  peerId: string
-  role: Role
-  onMessage: (data: unknown) => void
-  onStatus?: (s: 'connecting' | 'open' | 'closed' | 'error' | 'reconnecting') => void
-}
-
-function createSignaling({ room, peerId, role, onMessage, onStatus }: WsOpts) {
-  let ws: WebSocket | null = null
-  let retry = 0
-  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  let manuallyClosed = false
-
-  const connect = () => {
-    onStatus?.('connecting')
-    ws = new WebSocket(makeWsUrl('/api/ws'))
-
-    ws.onopen = () => {
-      retry = 0
-      manuallyClosed = false
-      onStatus?.('open')
-      ws!.send(
-        JSON.stringify({
-          type: 'join',
-          room,
-          peerId,
-          role
-        })
-      )
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer)
-        reconnectTimer = null
-      }
-    }
-
-    ws.onmessage = (ev) => {
-      try {
-        const data = JSON.parse(ev.data as string) as SignalingServerMessage
-        // Heartbeat: server -> ping, client -> pong
-        if (data && (data as any).type === 'ping') {
-          ws?.send(JSON.stringify({ type: 'pong' }))
-          return
-        }
-        onMessage?.(data)
-      } catch {
-        // ignore invalid payload
-      }
-    }
-
-    const scheduleReconnect = () => {
-      if (manuallyClosed) return
-      if (reconnectTimer) clearTimeout(reconnectTimer)
-      onStatus?.('reconnecting')
-      const delay = Math.min(30_000, 1_000 * Math.pow(2, retry++))
-      ws = null
-      reconnectTimer = setTimeout(connect, delay)
-    }
-
-    ws.onerror = () => {
-      onStatus?.('error')
-      try {
-        ws?.close()
-      } catch {}
-    }
-
-    ws.onclose = () => {
-      onStatus?.('closed')
-      ws = null
-      scheduleReconnect()
-    }
-  }
-
-  const send = (payload: unknown) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(payload))
-    }
-  }
-
-  const close = () => {
-    manuallyClosed = true
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
-    try {
-      ws?.close()
-    } catch {}
-    ws = null
-  }
-
-  connect()
-
-  return { send, close }
-}
+const authLog = createDebugLogger('auth')
+const lifecycleLog = createDebugLogger('lifecycle')
+const mediaLog = createDebugLogger('media')
+const networkLog = createDebugLogger('network')
+const recorderLog = createDebugLogger('recorder')
+const stateLog = createDebugLogger('state')
 
 type VideoPreviewProps = {
   stream: MediaStream | null
   muted?: boolean
   label: string
   placeholder?: string
-}
-
-const FALLBACK_STUN = [
-  'stun:stun.l.google.com:19302',
-  'stun:stun1.l.google.com:19302',
-  'stun:stun2.l.google.com:19302',
-  'stun:stun3.l.google.com:19302'
-]
-
-function sanitizeStunEnv(rawValue: string): string {
-  const trimmed = rawValue.trim()
-  if (!trimmed.length) return trimmed
-  const withoutWrappingQuotes = trimmed.replace(/^['"]|['"]$/g, '')
-  return withoutWrappingQuotes
-}
-
-function resolveIceServers(): RTCIceServer[] {
-  const servers: RTCIceServer[] = []
-  const stunEnvRaw = process.env.NEXT_PUBLIC_STUN_URLS
-  const resolvedStunUrls: string[] = []
-
-  if (stunEnvRaw) {
-    try {
-      const sanitized = sanitizeStunEnv(stunEnvRaw)
-      const parsed = JSON.parse(sanitized)
-      const stunList = Array.isArray(parsed) ? parsed : [parsed]
-      const validStun = stunList.filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
-      if (validStun.length) {
-        resolvedStunUrls.push(...validStun)
-        console.log('✅ Using STUN servers from env', validStun)
-      }
-    } catch (error) {
-      console.warn('⚠️ Failed to parse NEXT_PUBLIC_STUN_URLS', { error, value: stunEnvRaw })
-    }
-  }
-
-  if (!resolvedStunUrls.length) {
-    resolvedStunUrls.push(...FALLBACK_STUN)
-    console.log('ℹ️ Using fallback STUN servers', FALLBACK_STUN)
-  }
-
-  servers.push({ urls: resolvedStunUrls })
-
-  const turnUrl = process.env.NEXT_PUBLIC_TURN_URL
-  const turnUsername = process.env.NEXT_PUBLIC_TURN_USERNAME
-  const turnPassword = process.env.NEXT_PUBLIC_TURN_PASSWORD
-
-  if (turnUrl && turnUsername && turnPassword) {
-    console.log('✅ TURN server configuration detected')
-    servers.push({
-      urls: turnUrl,
-      username: turnUsername,
-      credential: turnPassword
-    })
-  }
-
-  console.log('🎯 Resolved ICE servers', servers)
-  return servers
 }
 
 export default function LiveClassroomPage() {
@@ -244,7 +58,7 @@ export default function LiveClassroomPage() {
     setStudentSession(session)
     setIsLoading(false)
 
-    console.log('🔐 Auth Debug:', {
+    authLog.info('Auth session state', {
       authStatus,
       authSessionFull: authSession,
       authSessionUser: authSession?.user,
@@ -379,6 +193,19 @@ function LiveRoom({
   }, [recorderError])
 
   useEffect(() => {
+    stateLog.info('Connection state updated', { connectionStatus, statusMessage, errorMessage })
+  }, [connectionStatus, statusMessage, errorMessage])
+
+  useEffect(() => {
+    stateLog.info('Session metrics updated', {
+      isLive,
+      viewerCount,
+      sessionId,
+      isSharingScreen
+    })
+  }, [isLive, isSharingScreen, sessionId, viewerCount])
+
+  useEffect(() => {
     if (localVideoRef.current && localPreviewStream) {
       localVideoRef.current.srcObject = localPreviewStream
     }
@@ -405,7 +232,7 @@ function LiveRoom({
           peer.onconnectionstatechange = null
           peer.close()
         } catch (error) {
-          console.warn('Failed to close peer connection', error)
+          mediaLog.warn('Failed to close peer connection', { error, peerId })
         }
         peersRef.current.delete(peerId)
       }
@@ -441,7 +268,7 @@ function LiveRoom({
         viewerPeerRef.current.onconnectionstatechange = null
         viewerPeerRef.current.close()
       } catch (error) {
-        console.warn('Failed to close viewer peer', error)
+        mediaLog.warn('Failed to close viewer peer', { error, peerId: 'viewerPeer' })
       }
       viewerPeerRef.current = null
     }
@@ -499,7 +326,7 @@ function LiveRoom({
   const handlePeerJoin = useCallback(
     async (viewerId: string) => {
       if (!localStreamRef.current) {
-        console.warn('No local stream available for new peer')
+        mediaLog.warn('No local stream available for new peer', { viewerId })
         return
       }
 
@@ -545,7 +372,7 @@ function LiveRoom({
           sdp: offer.sdp
         })
       } catch (error) {
-        console.error('Failed to create/send offer', error)
+        mediaLog.error('Failed to create/send offer', { error, viewerId })
         setErrorMessage('Gagal mengirim offer kepada peserta')
       }
     },
@@ -592,13 +419,13 @@ function LiveRoom({
             if (typeof payload.sdp !== 'string') break
             const peer = peersRef.current.get(message.from)
             if (!peer) {
-              console.warn('Peer not found for answer', message.from)
+              networkLog.warn('Peer not found for answer', { from: message.from })
               break
             }
             try {
               await peer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: payload.sdp }))
             } catch (error) {
-              console.error('Failed to set remote description (answer)', error)
+              mediaLog.error('Failed to set remote description (answer)', { error, from: message.from })
             }
             break
           }
@@ -609,7 +436,7 @@ function LiveRoom({
             try {
               await peer.addIceCandidate(new RTCIceCandidate(payload.candidate as RTCIceCandidateInit))
             } catch (error) {
-              console.error('Failed to add ICE candidate', error)
+              mediaLog.error('Failed to add ICE candidate', { error, from: message.from })
             }
           }
           break
@@ -689,7 +516,7 @@ function LiveRoom({
                 sdp: answer.sdp
               })
             } catch (error) {
-              console.error('Failed to handle offer', error)
+              mediaLog.error('Failed to handle offer', { error, from: message.from })
               setErrorMessage('Gagal menerima stream dari guru')
             }
           }
@@ -701,7 +528,7 @@ function LiveRoom({
                 new RTCIceCandidate(payload.candidate as RTCIceCandidateInit)
               )
             } catch (error) {
-              console.error('Failed to add ICE candidate (viewer)', error)
+              mediaLog.error('Failed to add ICE candidate (viewer)', { error, from: message.from })
             }
           }
           break
@@ -718,7 +545,7 @@ function LiveRoom({
                 viewerPeerRef.current.onconnectionstatechange = null
                 viewerPeerRef.current.close()
               } catch (error) {
-                console.warn('Failed to close viewer peer on host leave', error)
+                mediaLog.warn('Failed to close viewer peer on host leave', { error })
               }
               viewerPeerRef.current = null
             }
@@ -772,7 +599,7 @@ function LiveRoom({
             onMessage: (data) => {
               if (!isMountedRef.current) return
               try {
-                const parsed = data as SignalingServerMessage
+                const parsed = data
                 if (parsed.type === 'pong') {
                   return
                 }
@@ -782,11 +609,12 @@ function LiveRoom({
                   void handleViewerMessage(parsed)
                 }
               } catch (error) {
-                console.error('Failed to process signaling message', error)
+                networkLog.error('Failed to process signaling message', { error, data })
               }
             },
             onStatus: (status) => {
               if (!isMountedRef.current) return
+              networkLog.info('Signaling status update', { status })
               switch (status) {
                 case 'connecting': {
                   setConnectionStatus('connecting')
@@ -910,7 +738,7 @@ function LiveRoom({
       setIsSharingScreen(true)
       setStatusMessage('Berbagi layar ke peserta')
     } catch (error) {
-      console.error('Failed to start screen share', error)
+      mediaLog.error('Failed to start screen share', { error })
       setErrorMessage('Gagal memulai share screen')
     }
   }, [isSharingScreen, role, stopShareScreen])
@@ -943,7 +771,7 @@ function LiveRoom({
       setIsLive(true)
       setStatusMessage('Siaran dimulai. Siswa dapat bergabung sekarang.')
     } catch (error) {
-      console.error('Failed to start class', error)
+      lifecycleLog.error('Failed to start class', { error, roomId })
       setConnectionStatus('error')
       setErrorMessage(error instanceof Error ? error.message : 'Gagal memulai kelas langsung')
       teardownConnections()
@@ -962,7 +790,7 @@ function LiveRoom({
           body: JSON.stringify({ sessionId, recordingUrl: recordUrl ?? recordingUrl ?? null })
         })
       } catch (error) {
-        console.error('Failed to finalize session', error)
+        networkLog.error('Failed to finalize session', { error, sessionId, roomId })
         setErrorMessage('Sesi berakhir, tetapi gagal menyimpan status ke server')
       }
     },
@@ -983,7 +811,7 @@ function LiveRoom({
         setStatusMessage('Rekaman berhasil disimpan')
       }
     } catch (error) {
-      console.error('Failed to stop recording', error)
+      recorderLog.error('Failed to stop recording', { error })
       setErrorMessage('Gagal menyimpan rekaman')
     }
   }, [isRecording, role, roomId, stopRecording])
@@ -1013,7 +841,7 @@ function LiveRoom({
       setStatusMessage('Perekaman dimulai')
       setErrorMessage(null)
     } catch (error) {
-      console.error('Failed to start recording', error)
+      recorderLog.error('Failed to start recording', { error })
       setErrorMessage('Gagal memulai perekaman')
     }
   }, [isRecording, role, startRecording])
@@ -1025,10 +853,10 @@ function LiveRoom({
       setStatusMessage('Menghubungkan ke kelas...')
       await connectSignaling()
     } catch (error) {
-      console.error('Failed to join class', error)
+      networkLog.error('Failed to join class', { error, roomId })
       setErrorMessage('Tidak dapat terhubung ke sesi live')
     }
-  }, [connectSignaling, role])
+    }, [connectSignaling, role, roomId])
 
   const statusLabel = useMemo(() => {
     switch (connectionStatus) {
