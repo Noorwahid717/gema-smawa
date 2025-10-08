@@ -145,7 +145,7 @@ export default function ClassroomPage() {
   const [lastLiveMessage, setLastLiveMessage] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
 
   const liveStatusColor =
     liveStatus === "open"
@@ -197,7 +197,7 @@ export default function ClassroomPage() {
 
     function clearReconnectTimer() {
       if (reconnectTimerRef.current !== null) {
-        clearTimeout(reconnectTimerRef.current);
+        window.clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;
       }
     }
