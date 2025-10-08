@@ -12,7 +12,12 @@ export async function GET(req: Request) {
   const ws = server as WebSocket
 
   try {
-    ws.accept()
+    const accept = (ws as unknown as { accept?: () => void }).accept
+    if (typeof accept === 'function') {
+      accept.call(ws)
+    } else {
+      throw new Error('WebSocket missing accept')
+    }
 
     console.info('[ws] connection accepted')
 
