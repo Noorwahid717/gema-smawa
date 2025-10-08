@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -117,6 +117,10 @@ const mergeProgressWithProjects = (
 
 const STORAGE_PREFIX = "gema-classroom-project-roadmap";
 
+const LIVE_TRANSPORT_MODE = (
+  process.env.NEXT_PUBLIC_LIVE_TRANSPORT ?? process.env.LIVE_TRANSPORT ?? "ws"
+).toLowerCase();
+
 export default function ClassroomPage() {
   const [activeTab, setActiveTab] = useState<'assignments' | 'articles' | 'roadmap'>('assignments');
   const [assignments, setAssignments] = useState<ClassroomAssignmentResponse[]>([]);
@@ -132,6 +136,41 @@ export default function ClassroomPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [roadmapStudentId, setRoadmapStudentId] = useState("");
   const [roadmapStudentName, setRoadmapStudentName] = useState("");
+
+  const liveTransport: "ws" | "sse" =
+    LIVE_TRANSPORT_MODE === "sse" ? "sse" : "ws";
+  const [liveStatus, setLiveStatus] = useState<
+    "idle" | "connecting" | "open" | "reconnecting" | "closed" | "error"
+  >("idle");
+  const [lastLiveMessage, setLastLiveMessage] = useState("");
+  const wsRef = useRef<WebSocket | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
+
+  const liveStatusColor =
+    liveStatus === "open"
+      ? "text-green-600"
+      : liveStatus === "connecting"
+        ? "text-yellow-600"
+        : liveStatus === "reconnecting"
+          ? "text-orange-500"
+          : liveStatus === "error"
+            ? "text-red-600"
+            : "text-gray-600";
+
+  let liveMessagePreview = lastLiveMessage;
+  if (liveMessagePreview) {
+    try {
+      const parsed = JSON.parse(liveMessagePreview);
+      liveMessagePreview = JSON.stringify(parsed);
+    } catch {
+      // ignore invalid json
+    }
+  }
+  const liveMessageDisplay =
+    liveMessagePreview.length > 120
+      ? `${liveMessagePreview.slice(0, 117)}...`
+      : liveMessagePreview;
 
   const [projects, setProjects] = useState<ClassroomProjectChecklistItem[]>(DEFAULT_PROJECTS);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -152,6 +191,167 @@ export default function ClassroomPage() {
     fetchArticles();
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    let stopped = false;
+
+    function clearReconnectTimer() {
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    }
+
+    const closeWebSocket = () => {
+      const socket = wsRef.current;
+      if (socket) {
+        try {
+          socket.close();
+        } catch {}
+        wsRef.current = null;
+      }
+    };
+
+    const closeEventSource = () => {
+      const source = eventSourceRef.current;
+      if (source) {
+        source.close();
+        eventSourceRef.current = null;
+      }
+    };
+
+    if (liveTransport === "sse") {
+      setLiveStatus("connecting");
+
+      try {
+        const source = new EventSource("/api/live-classroom/stream");
+        eventSourceRef.current = source;
+
+        source.onopen = () => {
+          if (stopped) return;
+          setLiveStatus("open");
+        };
+
+        source.onmessage = (event) => {
+          if (stopped) return;
+          const data = event.data ?? "";
+          setLastLiveMessage(data);
+        };
+
+        source.onerror = () => {
+          if (stopped) return;
+          if (source.readyState === EventSource.CLOSED) {
+            setLiveStatus("closed");
+          } else {
+            setLiveStatus("reconnecting");
+          }
+        };
+      } catch (error) {
+        console.error("[classroom] SSE connection error", error);
+        setLiveStatus("error");
+      }
+
+      return () => {
+        stopped = true;
+        clearReconnectTimer();
+        closeEventSource();
+        closeWebSocket();
+      };
+    }
+
+    let attempt = 0;
+
+    function scheduleReconnect() {
+      if (stopped) return;
+      clearReconnectTimer();
+      setLiveStatus("reconnecting");
+      const delay = Math.min(5000, 1500 + attempt * 1000);
+      reconnectTimerRef.current = window.setTimeout(() => {
+        if (stopped) return;
+        attempt += 1;
+        connect();
+      }, delay);
+    }
+
+    function connect() {
+      if (stopped) return;
+      const isReconnect = attempt > 0;
+      setLiveStatus(isReconnect ? "reconnecting" : "connecting");
+
+      try {
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const ws = new WebSocket(`${protocol}://${window.location.host}/api/ws`);
+        wsRef.current = ws;
+
+        ws.addEventListener("open", () => {
+          if (stopped) return;
+          attempt = 0;
+          setLiveStatus("open");
+          try {
+            ws.send(
+              JSON.stringify({
+                type: "join",
+                t: Date.now()
+              })
+            );
+          } catch {}
+        });
+
+        ws.addEventListener("message", (event) => {
+          if (stopped) return;
+          const { data } = event;
+
+          if (typeof data === "string") {
+            setLastLiveMessage(data);
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed?.type === "ping") {
+                try {
+                  ws.send(
+                    JSON.stringify({
+                      type: "pong",
+                      t: Date.now()
+                    })
+                  );
+                } catch {}
+              }
+            } catch {}
+          } else if (data instanceof Blob) {
+            data
+              .text()
+              .then((text) => {
+                if (stopped) return;
+                setLastLiveMessage(text);
+              })
+              .catch(() => {});
+          }
+        });
+
+        ws.addEventListener("error", () => {
+          if (stopped) return;
+          setLiveStatus("error");
+        });
+
+        ws.addEventListener("close", () => {
+          if (stopped) return;
+          setLiveStatus("closed");
+          scheduleReconnect();
+        });
+      } catch (error) {
+        console.error("[classroom] WebSocket initialization error", error);
+        scheduleReconnect();
+      }
+    }
+
+    connect();
+
+    return () => {
+      stopped = true;
+      clearReconnectTimer();
+      closeWebSocket();
+      closeEventSource();
+    };
+  }, [liveTransport]);
 
   const fetchAssignments = async () => {
     try {
@@ -561,6 +761,29 @@ export default function ClassroomPage() {
                 LIVE
               </span>
             </Link>
+          </div>
+          <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-semibold uppercase tracking-wide">Live transport</span>
+              <span className="rounded bg-white px-2 py-0.5 text-xs font-semibold uppercase text-blue-600">
+                {liveTransport}
+              </span>
+              <span className="font-semibold">Status:</span>
+              <span className={`font-semibold capitalize ${liveStatusColor}`}>{liveStatus}</span>
+            </div>
+            {liveMessageDisplay && (
+              <div className="mt-2 space-y-1 text-blue-800">
+                <div className="text-xs uppercase tracking-wide text-blue-700">Last message</div>
+                <code className="block w-full overflow-hidden text-ellipsis whitespace-nowrap rounded bg-white/80 px-2 py-1 text-xs">
+                  {liveMessageDisplay}
+                </code>
+              </div>
+            )}
+            {liveTransport === 'sse' && (
+              <p className="mt-2 text-xs text-blue-700">
+                Mode SSE aktif untuk fallback satu arah.
+              </p>
+            )}
           </div>
         </div>
       </div>
