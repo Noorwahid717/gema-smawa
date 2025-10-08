@@ -54,6 +54,32 @@ npm run dev
 - Admin Panel: `http://localhost:3000/admin/login`
 - Student Dashboard: `http://localhost:3000/student/login`nakan credentials berikut:
 
+## 🔌 Live Classroom Transport
+
+- Gunakan variabel lingkungan `LIVE_TRANSPORT` (`ws` default, `sse` untuk fallback satu arah) di `.env.local`.
+- Endpoint WebSocket: `/api/ws` (Edge runtime) mengirim heartbeat setiap 25 detik dan echo pesan JSON.
+- Endpoint SSE fallback: `/api/live-classroom/stream` memancarkan event `ready` dan `ping` untuk monitor satu arah.
+- Halaman `/classroom` menampilkan status koneksi secara real-time (connecting/open/reconnecting/closed) dan potongan pesan terakhir.
+
+### Verifikasi Koneksi WebSocket
+
+```bash
+# Tanpa upgrade → 426 Expected Upgrade
+curl -i http://localhost:3000/api/ws
+
+# Dengan upgrade → 101 Switching Protocols
+curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" http://localhost:3000/api/ws
+```
+
+### Verifikasi Fallback SSE
+
+```bash
+LIVE_TRANSPORT=sse npm run dev
+curl -N http://localhost:3000/api/live-classroom/stream
+```
+
+Pastikan log browser di `/classroom` menunjukkan status `open` dan pesan heartbeat tanpa error 500.
+
 **Super Admin:**
 - Email: `admin@smawahidiyah.edu`
 - Password: `admin123`
