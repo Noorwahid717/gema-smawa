@@ -56,29 +56,40 @@ npm run dev
 
 ## 🔌 Live Classroom Transport
 
-- Gunakan variabel lingkungan `LIVE_TRANSPORT` (`ws` default, `sse` untuk fallback satu arah) di `.env.local`.
-- Endpoint WebSocket: `/api/ws` (Edge runtime) mengirim heartbeat setiap 25 detik dan echo pesan JSON.
-- Endpoint SSE fallback: `/api/live-classroom/stream` memancarkan event `ready` dan `ping` untuk monitor satu arah.
-- Halaman `/classroom` menampilkan status koneksi secara real-time (connecting/open/reconnecting/closed) dan potongan pesan terakhir.
+### LiveKit Streaming (default)
 
-### Verifikasi Koneksi WebSocket
+- Atur `LIVE_TRANSPORT=livekit` dan isi `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, serta `LIVEKIT_ROOM_PREFIX` pada `.env.local`.
+- Untuk pengembangan lokal, jalankan LiveKit server menggunakan Docker:
 
-```bash
-# Tanpa upgrade → 426 Expected Upgrade
-curl -i http://localhost:3000/api/ws
+  ```bash
+  docker run --rm -it \
+    -p 7880:7880 -p 7881:7881 -p 7882:7882 \
+    livekit/livekit-server --dev --bind 0.0.0.0
+  ```
 
-# Dengan upgrade → 101 Switching Protocols
-curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" http://localhost:3000/api/ws
-```
+  Gunakan kredensial dev bawaan (`LIVEKIT_URL=ws://localhost:7880`, `LIVEKIT_API_KEY=devkey`, `LIVEKIT_API_SECRET=secret`).
+- Setelah login sebagai admin atau siswa, mintalah token melalui route Node.js baru:
 
-### Verifikasi Fallback SSE
+  ```bash
+  curl -X POST http://localhost:3000/api/livekit/token \
+    -H "Content-Type: application/json" \
+    -H "Cookie: <salin cookie NextAuth dari browser>" \
+    -d '{"role":"guru"}'
+  ```
 
-```bash
-LIVE_TRANSPORT=sse npm run dev
-curl -N http://localhost:3000/api/live-classroom/stream
-```
+  Respons akan berisi `{ token, url, room }`. Token HS256 dapat diverifikasi menggunakan perintah `jwt decode` atau [jwt.io](https://jwt.io/).
+- Buka `/classroom?mode=presenter` untuk guru dan `/classroom?mode=viewer` pada akun siswa lain. Pastikan:
+  - Kamera/mikrofon dapat dinyalakan/mati.
+  - Screen share menambah tile baru bagi penonton.
+  - Penonton tetap tersambung saat presenter mematikan dan menyalakan kamera ulang.
+  - Status koneksi (connecting/connected) terlihat pada kartu LiveKit.
+- Gunakan DevTools Network tab untuk memastikan koneksi WebSocket ke LiveKit (`/rtc`), datachannel chat, dan tidak ada error CORS.
 
-Pastikan log browser di `/classroom` menunjukkan status `open` dan pesan heartbeat tanpa error 500.
+### Legacy WS/SSE Fallback
+
+- Set `LIVE_TRANSPORT=ws` atau `LIVE_TRANSPORT=sse` untuk menggunakan mekanisme lama.
+- Endpoint WebSocket lama (`/api/ws`) mengirim heartbeat setiap 25 detik, sedangkan SSE fallback tersedia di `/api/live-classroom/stream`.
+- Halaman `/classroom` tetap menampilkan status koneksi dan pesan terakhir untuk mode lama.
 
 **Super Admin:**
 - Email: `admin@smawahidiyah.edu`

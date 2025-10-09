@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import {
   BookOpen,
   Upload,
@@ -26,6 +28,8 @@ import {
   Sparkles,
   RefreshCw
 } from "lucide-react";
+import { LiveClassroom } from "@/features/livekit/LiveClassroom";
+import { studentAuth, type StudentSession } from "@/lib/student-auth";
 import type {
   ClassroomAssignmentResponse,
   ClassroomProjectChecklistItem
@@ -121,7 +125,25 @@ const LIVE_TRANSPORT_MODE = (
   process.env.NEXT_PUBLIC_LIVE_TRANSPORT ?? process.env.LIVE_TRANSPORT ?? "ws"
 ).toLowerCase();
 
+type LiveTransportMode = "ws" | "sse" | "livekit";
+
 export default function ClassroomPage() {
+  return (
+    <Suspense fallback={<ClassroomPageSkeleton />}>
+      <ClassroomPageContent />
+    </Suspense>
+  );
+}
+
+function ClassroomPageSkeleton() {
+  return (
+    <div className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <p className="text-sm text-slate-500">Memuat halaman kelas...</p>
+    </div>
+  );
+}
+
+function ClassroomPageContent() {
   const [activeTab, setActiveTab] = useState<'assignments' | 'articles' | 'roadmap'>('assignments');
   const [assignments, setAssignments] = useState<ClassroomAssignmentResponse[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -137,8 +159,34 @@ export default function ClassroomPage() {
   const [roadmapStudentId, setRoadmapStudentId] = useState("");
   const [roadmapStudentName, setRoadmapStudentName] = useState("");
 
-  const liveTransport: "ws" | "sse" =
-    LIVE_TRANSPORT_MODE === "sse" ? "sse" : "ws";
+  const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const [studentSession, setStudentSession] = useState<StudentSession | null>(null);
+
+  useEffect(() => {
+    const syncStudentSession = () => {
+      const current = studentAuth.getSession();
+      setStudentSession(current);
+    };
+
+    syncStudentSession();
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", syncStudentSession);
+      return () => {
+        window.removeEventListener("storage", syncStudentSession);
+      };
+    }
+
+    return undefined;
+  }, []);
+
+  const liveTransport: LiveTransportMode =
+    LIVE_TRANSPORT_MODE === "livekit"
+      ? "livekit"
+      : LIVE_TRANSPORT_MODE === "sse"
+        ? "sse"
+        : "ws";
   const [liveStatus, setLiveStatus] = useState<
     "idle" | "connecting" | "open" | "reconnecting" | "closed" | "error"
   >("idle");
@@ -172,6 +220,39 @@ export default function ClassroomPage() {
       ? `${liveMessagePreview.slice(0, 117)}...`
       : liveMessagePreview;
 
+  const isLivekitEnabled = liveTransport === "livekit";
+  const sessionRole = session?.user?.role?.toUpperCase?.() ?? "";
+  const sessionUserType = session?.user?.userType?.toUpperCase?.() ?? "";
+  const adminRoleSet = new Set(["ADMIN", "SUPER_ADMIN", "GURU", "TEACHER", "PRESENTER"]);
+  const isAdminUser = adminRoleSet.has(sessionRole);
+  const isStudentUser =
+    sessionUserType === "STUDENT" || sessionRole === "STUDENT" || Boolean(studentSession);
+
+  const modeParam = searchParams?.get("mode")?.toLowerCase();
+  const requestedLivekitMode =
+    modeParam === "presenter" ? "presenter" : modeParam === "viewer" ? "viewer" : undefined;
+
+  const livekitMode: "presenter" | "viewer" = requestedLivekitMode
+    ? requestedLivekitMode === "presenter" && !isAdminUser
+      ? "viewer"
+      : requestedLivekitMode
+    : isAdminUser
+      ? "presenter"
+      : "viewer";
+
+  const livekitUserId =
+    livekitMode === "presenter"
+      ? session?.user?.id ?? session?.user?.email ?? undefined
+      : studentSession?.id ?? session?.user?.id ?? session?.user?.email ?? undefined;
+
+  const livekitUserName =
+    livekitMode === "presenter"
+      ? session?.user?.name ?? session?.user?.email ?? "Guru"
+      : studentSession?.fullName ?? session?.user?.name ?? session?.user?.email ?? "Siswa";
+
+  const livekitRoomHint = searchParams?.get("room") ?? searchParams?.get("eventId") ?? undefined;
+  const canJoinLivekit = isAdminUser || isStudentUser;
+
   const [projects, setProjects] = useState<ClassroomProjectChecklistItem[]>(DEFAULT_PROJECTS);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
@@ -193,6 +274,12 @@ export default function ClassroomPage() {
   }, []);
 
   useEffect(() => {
+    if (liveTransport === "livekit") {
+      setLiveStatus("idle");
+      setLastLiveMessage("");
+      return;
+    }
+
     let stopped = false;
 
     function clearReconnectTimer() {
@@ -749,42 +836,87 @@ export default function ClassroomPage() {
                 Roadmap Proyek
               </button>
             </div>
-            <Link
-              href="/classroom/gema-classroom-1/live"
-              className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg transform hover:scale-105 font-medium"
-            >
-              <svg className="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                <circle cx="10" cy="10" r="8" />
-              </svg>
-              🎥 Tonton Live Class
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-white text-red-600">
-                LIVE
-              </span>
-            </Link>
-          </div>
-          <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="font-semibold uppercase tracking-wide">Live transport</span>
-              <span className="rounded bg-white px-2 py-0.5 text-xs font-semibold uppercase text-blue-600">
-                {liveTransport}
-              </span>
-              <span className="font-semibold">Status:</span>
-              <span className={`font-semibold capitalize ${liveStatusColor}`}>{liveStatus}</span>
-            </div>
-            {liveMessageDisplay && (
-              <div className="mt-2 space-y-1 text-blue-800">
-                <div className="text-xs uppercase tracking-wide text-blue-700">Last message</div>
-                <code className="block w-full overflow-hidden text-ellipsis whitespace-nowrap rounded bg-white/80 px-2 py-1 text-xs">
-                  {liveMessageDisplay}
-                </code>
+            {isLivekitEnabled ? (
+              <div className="flex flex-col items-end gap-1 text-right">
+                <span className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                  Live transport: LiveKit
+                </span>
+                <span className="text-xs font-medium text-slate-500">
+                  Mode: {livekitMode === 'presenter' ? 'Guru / Presenter' : 'Siswa / Viewer'}
+                </span>
               </div>
-            )}
-            {liveTransport === 'sse' && (
-              <p className="mt-2 text-xs text-blue-700">
-                Mode SSE aktif untuk fallback satu arah.
-              </p>
+            ) : (
+              <Link
+                href="/classroom/gema-classroom-1/live"
+                className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg transform hover:scale-105 font-medium"
+              >
+                <svg className="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                  <circle cx="10" cy="10" r="8" />
+                </svg>
+                🎥 Tonton Live Class
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-white text-red-600">
+                  LIVE
+                </span>
+              </Link>
             )}
           </div>
+          {isLivekitEnabled ? (
+            <div className="mt-6">
+              {canJoinLivekit ? (
+                <LiveClassroom
+                  mode={livekitMode}
+                  userId={livekitUserId}
+                  userName={livekitUserName}
+                  roomHint={livekitRoomHint}
+                />
+              ) : (
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 text-blue-900">
+                  <p className="text-base font-semibold">Masuk untuk mengakses Live Class</p>
+                  <p className="mt-2 text-sm text-blue-800">
+                    Live streaming hanya tersedia untuk guru dan siswa terdaftar. Silakan login terlebih dahulu.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Link
+                      href="/admin/login"
+                      className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                    >
+                      Login Admin
+                    </Link>
+                    <Link
+                      href="/student/login"
+                      className="inline-flex items-center gap-2 rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+                    >
+                      Login Siswa
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="font-semibold uppercase tracking-wide">Live transport</span>
+                <span className="rounded bg-white px-2 py-0.5 text-xs font-semibold uppercase text-blue-600">
+                  {liveTransport}
+                </span>
+                <span className="font-semibold">Status:</span>
+                <span className={`font-semibold capitalize ${liveStatusColor}`}>{liveStatus}</span>
+              </div>
+              {liveMessageDisplay && (
+                <div className="mt-2 space-y-1 text-blue-800">
+                  <div className="text-xs uppercase tracking-wide text-blue-700">Last message</div>
+                  <code className="block w-full overflow-hidden text-ellipsis whitespace-nowrap rounded bg-white/80 px-2 py-1 text-xs">
+                    {liveMessageDisplay}
+                  </code>
+                </div>
+              )}
+              {liveTransport === 'sse' && (
+                <p className="mt-2 text-xs text-blue-700">
+                  Mode SSE aktif untuk fallback satu arah.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
