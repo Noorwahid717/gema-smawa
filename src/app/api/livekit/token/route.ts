@@ -52,16 +52,40 @@ export async function POST(request: Request) {
 
   const session = await getServerSession(authOptions)
 
-  if (!session || !session.user) {
+  const bodyUserIdRaw = body?.userId
+  const bodyUserNameRaw = body?.userName
+  const bodyUserId =
+    typeof bodyUserIdRaw === "string"
+      ? bodyUserIdRaw.trim()
+      : bodyUserIdRaw != null
+        ? String(bodyUserIdRaw).trim()
+        : ""
+  const bodyUserName =
+    typeof bodyUserNameRaw === "string"
+      ? bodyUserNameRaw.trim()
+      : bodyUserNameRaw != null
+        ? String(bodyUserNameRaw).trim()
+        : ""
+
+  const fallbackStudent =
+    (!session || !session.user) && bodyUserId && bodyUserName
+      ? {
+          id: bodyUserId,
+          name: bodyUserName
+        }
+      : null
+
+  if ((!session || !session.user) && !fallbackStudent) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const sessionRole = normalize(session.user.role)
-  const sessionUserType = normalize(session.user.userType)
+  const sessionRole = normalize(session?.user?.role)
+  const sessionUserType = normalize(session?.user?.userType)
   const requestedRole = normalize(body?.role)
 
   const isAdmin = ADMIN_ROLES.has(sessionRole)
-  const isStudent = STUDENT_ROLES.has(sessionUserType)
+  const isStudent =
+    STUDENT_ROLES.has(sessionUserType) || STUDENT_ROLES.has(sessionRole) || Boolean(fallbackStudent)
 
   let effectiveRole: EffectiveRole = "viewer"
 
@@ -86,17 +110,24 @@ export async function POST(request: Request) {
   const baseRoom = body?.eventId ?? body?.roomHint ?? "classroom"
   const roomName = makeRoomName(baseRoom)
 
-  const sessionUserId = session.user.id ?? session.user.email ?? randomUUID()
-  const requestUserId = body?.userId && body.userId.trim().length > 0 ? body.userId : undefined
+  const sessionUserId = session?.user?.id ?? session?.user?.email ?? fallbackStudent?.id ?? randomUUID()
+  const requestUserId = bodyUserId.length > 0 ? bodyUserId : undefined
   const rawIdentitySource = requestUserId ?? sessionUserId
   const identitySource = sanitizeIdentity(rawIdentitySource)
   const identity = `${effectiveRole}-${identitySource || randomUUID()}`.slice(0, 120)
 
-  const displayName = body?.userName?.trim().length
-    ? body.userName.trim()
-    : session.user.name?.trim().length
-      ? session.user.name.trim()
-      : session.user.email ?? identity
+  const sessionUserName = session?.user?.name ?? ""
+  const sessionUserEmail = session?.user?.email ?? ""
+  const fallbackStudentName = fallbackStudent?.name ?? ""
+  const trimmedSessionName = sessionUserName.trim()
+
+  const displayName = bodyUserName.length
+    ? bodyUserName
+    : fallbackStudentName.length
+      ? fallbackStudentName
+      : trimmedSessionName.length
+        ? trimmedSessionName
+        : sessionUserEmail || identity
 
   const token = new AccessToken(apiKey, apiSecret, {
     identity,
