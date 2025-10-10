@@ -39,6 +39,9 @@ type TokenResponse = {
 
 type Status = "idle" | "loading" | "ready" | "connecting" | "connected" | "error"
 
+const makeTrackKey = (track: TrackReference) =>
+  track.publication?.trackSid ?? `${track.participant.identity}-${track.source}`
+
 const MODE_LABEL: Record<LiveClassroomMode, string> = {
   presenter: "Guru / Presenter",
   viewer: "Siswa / Penonton"
@@ -109,15 +112,6 @@ export function LiveClassroom({ mode, userId, userName, roomHint }: LiveClassroo
   const [connectionState, setConnectionState] = useState<ConnectionState>(
     ConnectionState.Disconnected
   )
-  const screenShareTracks = useTracks([Track.Source.ScreenShare], {
-    onlySubscribed: mode === "viewer"
-  })
-  const cameraTracks = useTracks([Track.Source.Camera], {
-    onlySubscribed: mode === "viewer"
-  })
-
-  const makeTrackKey = (track: TrackReference) =>
-    track.publication?.trackSid ?? `${track.participant.identity}-${track.source}`
 
   const refreshToken = useCallback(async () => {
     setStatus("loading")
@@ -251,38 +245,7 @@ export function LiveClassroom({ mode, userId, userName, roomHint }: LiveClassroo
               <ConnectionStateWatcher onChange={setConnectionState} />
               <div className="flex h-full w-full flex-col">
                 <div className="flex-1 overflow-hidden">
-                  <div className="grid h-full w-full gap-2 p-2 md:grid-cols-2">
-                    {screenShareTracks.map((track) => (
-                      <div key={makeTrackKey(track)} className="col-span-full">
-                        <ParticipantTile
-                          trackRef={track}
-                          className="!bg-slate-950/70"
-                        />
-                      </div>
-                    ))}
-                    {cameraTracks.map((track) => (
-                      <div
-                        key={makeTrackKey(track)}
-                        className={
-                          screenShareTracks.length > 0
-                            ? "col-span-1"
-                            : "col-span-full"
-                        }
-                      >
-                        <ParticipantTile
-                          trackRef={track}
-                          className="!bg-slate-900/70"
-                        />
-                      </div>
-                    ))}
-                    {screenShareTracks.length === 0 &&
-                      cameraTracks.length === 0 && (
-                        <div className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-slate-800/40 bg-slate-900/60 p-6 text-center text-sm text-slate-200">
-                          <Video className="mb-2 h-5 w-5" />
-                          <p>Menunggu presenter menyalakan kamera atau berbagi layar.</p>
-                        </div>
-                      )}
-                  </div>
+                  <ClassroomTracks mode={mode} />
                 </div>
 
                 {mode === "viewer" ? (
@@ -339,4 +302,46 @@ function ConnectionStateWatcher({ onChange }: ConnectionStateWatcherProps) {
   }, [onChange, state])
 
   return null
+}
+
+type ClassroomTracksProps = {
+  mode: LiveClassroomMode
+}
+
+function ClassroomTracks({ mode }: ClassroomTracksProps) {
+  const screenShareTracks = useTracks([Track.Source.ScreenShare], {
+    onlySubscribed: mode === "viewer"
+  })
+  const cameraTracks = useTracks([Track.Source.Camera], {
+    onlySubscribed: mode === "viewer"
+  })
+
+  if (screenShareTracks.length === 0 && cameraTracks.length === 0) {
+    return (
+      <div className="grid h-full w-full gap-2 p-2 md:grid-cols-2">
+        <div className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-slate-800/40 bg-slate-900/60 p-6 text-center text-sm text-slate-200">
+          <Video className="mb-2 h-5 w-5" />
+          <p>Menunggu presenter menyalakan kamera atau berbagi layar.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid h-full w-full gap-2 p-2 md:grid-cols-2">
+      {screenShareTracks.map((track) => (
+        <div key={makeTrackKey(track)} className="col-span-full">
+          <ParticipantTile trackRef={track} className="!bg-slate-950/70" />
+        </div>
+      ))}
+      {cameraTracks.map((track) => (
+        <div
+          key={makeTrackKey(track)}
+          className={screenShareTracks.length > 0 ? "col-span-1" : "col-span-full"}
+        >
+          <ParticipantTile trackRef={track} className="!bg-slate-900/70" />
+        </div>
+      ))}
+    </div>
+  )
 }
