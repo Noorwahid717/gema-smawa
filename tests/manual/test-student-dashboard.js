@@ -4,7 +4,7 @@
  * Test Script: Joyful Student Dashboard Integration
  * Purpose: Test student dashboard with real database data and playful design
  * 
- * Usage: node test-student-dashboard.js
+ * Usage: node tests/manual/test-student-dashboard.js
  */
 
 const http = require('http');

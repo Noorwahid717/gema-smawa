@@ -15,6 +15,7 @@ const DEFAULT_FORM: GalleryFormData = {
   imageUrl: '',
   category: 'general',
   isActive: true,
+  showOnHomepage: false,
 }
 
 const CATEGORY_OPTIONS: GalleryCategoryOption[] = [
@@ -127,6 +128,7 @@ export function GalleryManager() {
       imageUrl: item.imageUrl,
       category: item.category,
       isActive: item.isActive,
+      showOnHomepage: item.showOnHomepage,
     })
     setIsFormVisible(true)
   }, [])

@@ -128,7 +128,7 @@ changeType: stats.contactsChange >= 0 ? 'increase' : 'decrease'
 
 ### **Test Execution**
 ```bash
-$ node test-dashboard-integration.js
+$ node tests/manual/test-dashboard-integration.js
 🚀 Testing Dashboard Database Integration...
 
 📊 Fetching dashboard statistics...
@@ -223,7 +223,7 @@ Dashboard admin SMA Wahidiyah sekarang menggunakan data real dari database denga
 npm run dev
 
 # Test dashboard integration
-node test-dashboard-integration.js
+node tests/manual/test-dashboard-integration.js
 
 # Build for production
 npm run build

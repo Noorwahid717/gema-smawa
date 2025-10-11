@@ -14,6 +14,7 @@ const DEFAULT_FORM: AnnouncementFormData = {
   content: '',
   type: 'info',
   isActive: true,
+  showOnHomepage: false,
 }
 
 const TYPE_OPTIONS: AnnouncementTypeOption[] = [
@@ -126,6 +127,7 @@ export function AnnouncementManager() {
       content: announcement.content,
       type: announcement.type,
       isActive: announcement.isActive,
+      showOnHomepage: announcement.showOnHomepage,
     })
     setIsFormVisible(true)
   }, [])

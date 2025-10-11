@@ -55,11 +55,18 @@ export function GalleryGrid({ items, isLoading, onEdit, onDelete, options }: Gal
             )}
             <div className="flex items-center justify-between text-sm text-gray-500">
               <span>{new Date(item.createdAt).toLocaleDateString('id-ID')}</span>
-              {!item.isActive && (
-                <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-gray-200 text-gray-700">
-                  Disembunyikan
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {!item.isActive && (
+                  <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-gray-200 text-gray-700">
+                    Disembunyikan
+                  </span>
+                )}
+                {item.showOnHomepage && (
+                  <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800">
+                    Landing Page
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-end gap-3 pt-2">
               <button

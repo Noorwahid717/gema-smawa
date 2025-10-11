@@ -5,6 +5,13 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+async function ensureGalleryHomepageColumn() {
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "galleries"
+    ADD COLUMN IF NOT EXISTS "showOnHomepage" BOOLEAN NOT NULL DEFAULT FALSE
+  `)
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -12,6 +19,8 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await ensureGalleryHomepageColumn();
 
     const gallery = await prisma.gallery.findMany({
       orderBy: { createdAt: 'desc' }
@@ -35,7 +44,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { title, description, imageUrl, category, isActive } = await request.json();
+    await ensureGalleryHomepageColumn();
+
+    const { title, description, imageUrl, category, isActive, showOnHomepage } = await request.json();
 
     if (!title || !imageUrl) {
       return NextResponse.json(
@@ -50,7 +61,8 @@ export async function POST(request: NextRequest) {
         description,
         imageUrl,
         category: category || 'general',
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        showOnHomepage: showOnHomepage === true
       }
     });
 
@@ -72,6 +84,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    await ensureGalleryHomepageColumn();
+
     const { id, ...updateData } = await request.json();
 
     if (!id) {
@@ -79,6 +93,10 @@ export async function PATCH(request: NextRequest) {
         { error: 'ID is required' },
         { status: 400 }
       );
+    }
+
+    if (updateData.showOnHomepage !== undefined) {
+      updateData.showOnHomepage = Boolean(updateData.showOnHomepage)
     }
 
     const updatedGalleryItem = await prisma.gallery.update({

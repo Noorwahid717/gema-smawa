@@ -5,6 +5,13 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+async function ensureAnnouncementHomepageColumn() {
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "announcements"
+    ADD COLUMN IF NOT EXISTS "showOnHomepage" BOOLEAN NOT NULL DEFAULT FALSE
+  `)
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -12,6 +19,8 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await ensureAnnouncementHomepageColumn();
 
     const announcements = await prisma.announcement.findMany({
       orderBy: { createdAt: 'desc' }
@@ -35,7 +44,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { title, content, type, isActive } = await request.json();
+    await ensureAnnouncementHomepageColumn();
+
+    const { title, content, type, isActive, showOnHomepage } = await request.json();
 
     if (!title || !content) {
       return NextResponse.json(
@@ -49,7 +60,8 @@ export async function POST(request: NextRequest) {
         title,
         content,
         type: type || 'info',
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        showOnHomepage: showOnHomepage === true
       }
     });
 
@@ -71,6 +83,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    await ensureAnnouncementHomepageColumn();
+
     const { id, ...updateData } = await request.json();
 
     if (!id) {
@@ -78,6 +92,10 @@ export async function PATCH(request: NextRequest) {
         { error: 'ID is required' },
         { status: 400 }
       );
+    }
+
+    if (updateData.showOnHomepage !== undefined) {
+      updateData.showOnHomepage = Boolean(updateData.showOnHomepage)
     }
 
     const updatedAnnouncement = await prisma.announcement.update({

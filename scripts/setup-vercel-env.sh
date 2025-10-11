@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Setup Vercel Environment Variables for GEMA Landing Page
-# Run this script: bash setup-vercel-env.sh
+# Run this script: bash scripts/setup-vercel-env.sh
 
 echo "🚀 Setting up Vercel Environment Variables for GEMA Landing Page..."
 

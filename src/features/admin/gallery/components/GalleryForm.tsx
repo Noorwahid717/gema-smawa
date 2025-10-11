@@ -104,18 +104,33 @@ export function GalleryForm({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <input
-              id="gallery-active"
-              type="checkbox"
-              name="isActive"
-              checked={formData.isActive}
-              onChange={onChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="gallery-active" className="text-sm text-gray-700">
-              Tampilkan di galeri publik
-            </label>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <input
+                id="gallery-active"
+                type="checkbox"
+                name="isActive"
+                checked={formData.isActive}
+                onChange={onChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="gallery-active" className="text-sm text-gray-700">
+                Tampilkan di galeri publik
+              </label>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                id="gallery-homepage"
+                type="checkbox"
+                name="showOnHomepage"
+                checked={Boolean(formData.showOnHomepage)}
+                onChange={onChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="gallery-homepage" className="text-sm text-gray-700">
+                Sorot di landing page
+              </label>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3">

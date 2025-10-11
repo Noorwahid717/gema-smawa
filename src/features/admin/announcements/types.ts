@@ -6,6 +6,7 @@ export interface Announcement {
   content: string
   type: AnnouncementType
   isActive: boolean
+  showOnHomepage: boolean
   publishDate: string
   createdAt: string
 }
@@ -15,6 +16,7 @@ export interface AnnouncementFormData {
   content: string
   type: AnnouncementType
   isActive: boolean
+  showOnHomepage: boolean
 }
 
 export interface AnnouncementTypeOption {

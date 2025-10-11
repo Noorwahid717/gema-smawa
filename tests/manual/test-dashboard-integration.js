@@ -4,7 +4,7 @@
  * Test Script: Dashboard Real Database Integration
  * Purpose: Verify admin dashboard is using real database data instead of dummy data
  * 
- * Usage: node test-dashboard-integration.js
+ * Usage: node tests/manual/test-dashboard-integration.js
  */
 
 const http = require('http');

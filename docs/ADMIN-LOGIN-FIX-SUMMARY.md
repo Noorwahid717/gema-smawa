@@ -140,7 +140,7 @@ async redirect({ url, baseUrl }) {
 **Created comprehensive documentation:**
 - ✅ `ADMIN-LOGIN-FIX.md` - Full technical documentation
 - ✅ `QUICK-FIX-ADMIN-LOGIN.md` - Quick reference guide
-- ✅ `verify-env.sh` - Environment variable verification script
+- ✅ `scripts/verify-env.sh` - Environment variable verification script
 
 ---
 
@@ -164,7 +164,7 @@ async redirect({ url, baseUrl }) {
 ### New Files:
 1. **`ADMIN-LOGIN-FIX.md`** - Comprehensive technical documentation
 2. **`QUICK-FIX-ADMIN-LOGIN.md`** - Quick troubleshooting guide
-3. **`verify-env.sh`** - Environment verification script
+3. **`scripts/verify-env.sh`** - Environment verification script
 4. **`ADMIN-LOGIN-FIX-SUMMARY.md`** - This summary report
 
 ---
@@ -282,7 +282,7 @@ npm start
 ### 2. Verify Environment Variables
 ```bash
 # Run verification script
-bash verify-env.sh
+bash scripts/verify-env.sh
 
 # Should show:
 # ✅ DATABASE_URL: Set
@@ -403,7 +403,7 @@ vercel logs --url=gema-smawa.vercel.app
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - General deployment guide
 
 ### Tools:
-- [verify-env.sh](./verify-env.sh) - Environment verification script
+- [scripts/verify-env.sh](../scripts/verify-env.sh) - Environment verification script
 
 ### External Resources:
 - [NextAuth.js Documentation](https://next-auth.js.org/)

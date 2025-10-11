@@ -16,7 +16,7 @@ npm run db:seed-tutorials
 npx tsx prisma/seed-tutorial-articles.ts
 
 # Atau menggunakan bash script (Linux/Mac)
-bash seed-tutorial-articles.sh
+bash scripts/seed-tutorial-articles.sh
 ```
 
 ### 2. Melihat Hasil di Database

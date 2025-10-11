@@ -6,14 +6,18 @@ const prisma = new PrismaClient();
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const type = searchParams.get('type')
+  const highlightOnly = searchParams.get('highlight') === 'true'
 
   try {
     switch (type) {
       case 'activities':
         const activities = await prisma.activity.findMany({
-          where: { isActive: true },
+          where: {
+            isActive: true,
+            ...(highlightOnly ? { showOnHomepage: true } : {}),
+          },
           orderBy: { date: 'asc' },
-          take: 10
+          take: highlightOnly ? 6 : 10
         })
         return NextResponse.json({
           success: true,
@@ -22,36 +26,42 @@ export async function GET(request: NextRequest) {
             title: activity.title,
             description: activity.description,
             date: activity.date.toISOString().split('T')[0],
-            time: '09:00', // Default time
-            location: activity.location,
-            capacity: activity.capacity,
-            participants: activity.registered,
-            category: 'workshop'
-          }))
+              time: '09:00', // Default time
+              location: activity.location,
+              capacity: activity.capacity,
+              participants: activity.registered,
+              category: 'workshop'
+            }))
         })
         
       case 'announcements':
         const announcements = await prisma.announcement.findMany({
-          where: { isActive: true },
+          where: {
+            isActive: true,
+            ...(highlightOnly ? { showOnHomepage: true } : {}),
+          },
           orderBy: { publishDate: 'desc' },
-          take: 5
+          take: highlightOnly ? 6 : 5
         })
         return NextResponse.json({
           success: true,
           data: announcements.map(announcement => ({
             id: announcement.id,
             title: announcement.title,
-            content: announcement.content,
-            type: announcement.type,
-            publishedAt: announcement.publishDate.toISOString().split('T')[0]
-          }))
+              content: announcement.content,
+              type: announcement.type,
+              publishedAt: announcement.publishDate.toISOString().split('T')[0]
+            }))
         })
         
       case 'gallery':
         const gallery = await prisma.gallery.findMany({
-          where: { isActive: true },
+          where: {
+            isActive: true,
+            ...(highlightOnly ? { showOnHomepage: true } : {}),
+          },
           orderBy: { createdAt: 'desc' },
-          take: 8
+          take: highlightOnly ? 9 : 8
         })
         return NextResponse.json({
           success: true,
@@ -82,23 +92,44 @@ export async function GET(request: NextRequest) {
         
       default:
         // Return all data for homepage
-        const [activitiesData, announcementsData, galleryData] = await Promise.all([
-          prisma.activity.findMany({
-            where: { isActive: true },
-            orderBy: { date: 'asc' },
-            take: 3
-          }),
-          prisma.announcement.findMany({
-            where: { isActive: true },
-            orderBy: { publishDate: 'desc' },
-            take: 3
-          }),
-          prisma.gallery.findMany({
-            where: { isActive: true },
-            orderBy: { createdAt: 'desc' },
-            take: 4
-          })
-        ])
+        const selectedActivities = await prisma.activity.findMany({
+          where: { isActive: true, showOnHomepage: true },
+          orderBy: { date: 'asc' },
+          take: 3
+        })
+        const activitiesData = selectedActivities.length > 0
+          ? selectedActivities
+          : await prisma.activity.findMany({
+              where: { isActive: true },
+              orderBy: { date: 'asc' },
+              take: 3
+            })
+
+        const selectedAnnouncements = await prisma.announcement.findMany({
+          where: { isActive: true, showOnHomepage: true },
+          orderBy: { publishDate: 'desc' },
+          take: 3
+        })
+        const announcementsData = selectedAnnouncements.length > 0
+          ? selectedAnnouncements
+          : await prisma.announcement.findMany({
+              where: { isActive: true },
+              orderBy: { publishDate: 'desc' },
+              take: 3
+            })
+
+        const selectedGallery = await prisma.gallery.findMany({
+          where: { isActive: true, showOnHomepage: true },
+          orderBy: { createdAt: 'desc' },
+          take: 4
+        })
+        const galleryData = selectedGallery.length > 0
+          ? selectedGallery
+          : await prisma.gallery.findMany({
+              where: { isActive: true },
+              orderBy: { createdAt: 'desc' },
+              take: 4
+            })
 
         const statsData = {
           totalMembers: await prisma.registration.count(),

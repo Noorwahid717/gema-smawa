@@ -5,6 +5,13 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+async function ensureActivityHomepageColumn() {
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "activities"
+    ADD COLUMN IF NOT EXISTS "showOnHomepage" BOOLEAN NOT NULL DEFAULT FALSE
+  `)
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -12,6 +19,8 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await ensureActivityHomepageColumn();
 
     const activities = await prisma.activity.findMany({
       orderBy: { createdAt: 'desc' }
@@ -35,7 +44,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { title, description, date, location, capacity, isActive } = await request.json();
+    await ensureActivityHomepageColumn();
+
+    const { title, description, date, location, capacity, isActive, showOnHomepage } = await request.json();
 
     if (!title || !description || !date) {
       return NextResponse.json(
@@ -51,7 +62,8 @@ export async function POST(request: NextRequest) {
         date: new Date(date),
         location,
         capacity: capacity || 50,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        showOnHomepage: showOnHomepage === true
       }
     });
 
@@ -73,6 +85,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    await ensureActivityHomepageColumn();
+
     const { id, ...updateData } = await request.json();
 
     if (!id) {
@@ -80,6 +94,10 @@ export async function PATCH(request: NextRequest) {
         { error: 'ID is required' },
         { status: 400 }
       );
+    }
+
+    if (updateData.showOnHomepage !== undefined) {
+      updateData.showOnHomepage = Boolean(updateData.showOnHomepage)
     }
 
     // Convert date string to Date object if provided

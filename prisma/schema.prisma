@@ -60,6 +60,7 @@ model Announcement {
   content     String
   type        String   @default("info") // info, warning, success, error
   isActive    Boolean  @default(true)
+  showOnHomepage Boolean @default(false)
   publishDate DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -84,6 +85,7 @@ model Activity {
   capacity    Int?
   registered  Int      @default(0)
   isActive    Boolean  @default(true)
+  showOnHomepage Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -97,6 +99,7 @@ model Gallery {
   imageUrl    String
   category    String   @default("general")
   isActive    Boolean  @default(true)
+  showOnHomepage Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

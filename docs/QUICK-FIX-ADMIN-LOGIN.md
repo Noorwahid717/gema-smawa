@@ -15,7 +15,7 @@
 ### 1. Verify Environment Variables (2 menit)
 ```bash
 cd /workspaces/gema-smawa
-bash verify-env.sh
+bash scripts/verify-env.sh
 ```
 
 **Must have:**

@@ -54,6 +54,11 @@ export function AnnouncementList({
                       Nonaktif
                     </span>
                   )}
+                  {announcement.showOnHomepage && (
+                    <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800">
+                      Landing Page
+                    </span>
+                  )}
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">{announcement.title}</h3>
                 <p className="text-gray-600 whitespace-pre-line">{announcement.content}</p>

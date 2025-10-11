@@ -2,6 +2,7 @@
 
 # GEMA Landing Page - GitHub Setup Script
 # Run this script to setup GitHub repository and deploy to Vercel
+# Usage: bash scripts/setup-github.sh
 
 echo "🚀 Setting up GEMA Landing Page for deployment..."
 

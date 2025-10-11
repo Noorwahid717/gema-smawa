@@ -7,6 +7,7 @@ export interface GalleryItem {
   imageUrl: string
   category: GalleryCategory
   isActive: boolean
+  showOnHomepage: boolean
   createdAt: string
 }
 
@@ -16,6 +17,7 @@ export interface GalleryFormData {
   imageUrl: string
   category: GalleryCategory
   isActive: boolean
+  showOnHomepage: boolean
 }
 
 export interface GalleryCategoryOption {

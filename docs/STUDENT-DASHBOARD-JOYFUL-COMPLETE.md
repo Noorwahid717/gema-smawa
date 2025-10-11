@@ -186,9 +186,9 @@ const dashboardStats = {
 
 ## 🧪 **Testing & Quality Assurance**
 
-### **Test File:** `test-student-dashboard.js`
+### **Test File:** `tests/manual/test-student-dashboard.js`
 ```bash
-$ node test-student-dashboard.js
+$ node tests/manual/test-student-dashboard.js
 
 ╔══════════════════════════════════════════════════════════╗
 ║           🎉 JOYFUL STUDENT DASHBOARD TEST 🎉           ║
@@ -309,7 +309,7 @@ Dashboard siswa SMA Wahidiyah GEMA sekarang menyediakan:
 npm run dev
 
 # Test dashboard integration  
-node test-student-dashboard.js
+node tests/manual/test-student-dashboard.js
 
 # Build for production
 npm run build

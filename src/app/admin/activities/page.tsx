@@ -13,6 +13,7 @@ interface Activity {
   capacity?: number
   registered: number
   isActive: boolean
+  showOnHomepage: boolean
   createdAt: string
 }
 
@@ -23,6 +24,7 @@ interface ActivityFormData {
   location: string
   capacity: number
   isActive: boolean
+  showOnHomepage: boolean
 }
 
 export default function ActivitiesPage() {
@@ -38,7 +40,8 @@ export default function ActivitiesPage() {
     date: '',
     location: '',
     capacity: 50,
-    isActive: true
+    isActive: true,
+    showOnHomepage: false
   })
 
   useEffect(() => {
@@ -63,8 +66,11 @@ export default function ActivitiesPage() {
     const { name, value, type } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
-              type === 'number' ? parseInt(value) || 0 : value
+      [name]: type === 'checkbox'
+        ? (e.target as HTMLInputElement).checked
+        : type === 'number'
+        ? parseInt(value, 10) || 0
+        : value
     }))
   }
 
@@ -104,7 +110,8 @@ export default function ActivitiesPage() {
       date: activity.date,
       location: activity.location || '',
       capacity: activity.capacity || 50,
-      isActive: activity.isActive
+      isActive: activity.isActive,
+      showOnHomepage: activity.showOnHomepage
     })
     setShowForm(true)
   }
@@ -131,7 +138,8 @@ export default function ActivitiesPage() {
       date: '',
       location: '',
       capacity: 50,
-      isActive: true
+      isActive: true,
+      showOnHomepage: false
     })
     setShowForm(false)
     setEditingActivity(null)
@@ -208,6 +216,11 @@ export default function ActivitiesPage() {
                         }`}>
                           {activity.isActive ? 'Aktif' : 'Nonaktif'}
                         </span>
+                        {activity.showOnHomepage && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                            Landing Page
+                          </span>
+                        )}
                         <button
                           onClick={() => handleEdit(activity)}
                           className="p-2 text-blue-600 hover:bg-blue-100 rounded"
@@ -318,9 +331,26 @@ export default function ActivitiesPage() {
                         <option value="true">Aktif</option>
                         <option value="false">Nonaktif</option>
                       </select>
-                    </div>
                   </div>
-                  
+                </div>
+                
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="activity-homepage"
+                      type="checkbox"
+                      name="showOnHomepage"
+                      checked={Boolean(formData.showOnHomepage)}
+                      onChange={(event) => setFormData(prev => ({
+                        ...prev,
+                        showOnHomepage: event.target.checked
+                      }))}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="activity-homepage" className="text-sm text-gray-700">
+                      Tampilkan kegiatan ini di landing page
+                    </label>
+                  </div>
+
                   <div className="mt-6 flex justify-end space-x-3">
                     <button
                       type="button"
