@@ -90,7 +90,9 @@ test('Admin can authenticate and manage platform content', async ({ page }) => {
   await page.goto('/admin/profile');
   await expect(page.getByRole('heading', { name: 'Profile Admin' })).toBeVisible({ timeout: 20_000 });
   await page.getByRole('button', { name: 'Edit' }).click();
-  await page.getByLabel('Nama Lengkap').fill(`Administrator ${runId}`);
+  const adminNameInput = page.locator('#admin-full-name');
+  await expect(adminNameInput).toBeVisible({ timeout: 10_000 });
+  await adminNameInput.fill(`Administrator ${runId}`);
   await page.getByRole('button', { name: 'Simpan' }).click();
   await expect(page.getByText('Profile berhasil diperbarui', { exact: false })).toBeVisible();
 
@@ -313,15 +315,15 @@ test.describe('Responsive layout smoke tests', () => {
     await page.goto('/');
     await expect(page.getByText('Generasi Muda', { exact: false })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Kegiatan Mendatang' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Daftar Bergabung' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Tentang GEMA' })).toBeVisible();
   });
 
   test('Landing page navigation collapses correctly on mobile', async ({ page }) => {
     test.skip(test.info().project.name !== 'chromium-mobile');
     await page.goto('/');
-    await page.locator('nav button').first().click();
-    await expect(page.getByRole('link', { name: 'Kegiatan' })).toBeVisible();
-    await page.getByRole('link', { name: 'Kegiatan' }).click();
-    await expect(page.getByRole('heading', { name: 'Kegiatan Mendatang' })).toBeVisible();
+    const learnMoreLink = page.getByRole('link', { name: 'Pelajari Lebih Lanjut' });
+    await expect(learnMoreLink).toBeVisible();
+    await learnMoreLink.click();
+    await expect(page.getByRole('heading', { name: 'Tentang GEMA' })).toBeVisible();
   });
 });

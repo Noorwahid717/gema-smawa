@@ -24,6 +24,7 @@ async function broadcastToAdmins(messageData: {
         senderName: messageData.senderName,
         senderEmail: messageData.senderEmail,
         message: messageData.message,
+        sessionId: messageData.sessionId,
         timestamp: messageData.timestamp
       },
       timestamp: new Date().toISOString()

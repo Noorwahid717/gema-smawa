@@ -2,6 +2,31 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Minimize2, Maximize2, User, Bot } from 'lucide-react'
+import { studentAuth, type StudentSession } from '@/lib/student-auth'
+
+const CHAT_SESSION_KEY_PREFIX = 'gema-chat-session'
+
+const getChatStorageKey = (email?: string) => {
+  const normalized = email?.trim().toLowerCase()
+  if (!normalized || normalized === 'guest@example.com') {
+    return `${CHAT_SESSION_KEY_PREFIX}:guest`
+  }
+  return `${CHAT_SESSION_KEY_PREFIX}:${normalized}`
+}
+
+const deriveStudentEmail = (session: StudentSession) => {
+  if (session.email && session.email.trim().length > 0) {
+    return session.email.trim()
+  }
+  if (session.studentId && session.studentId.trim().length > 0) {
+    const normalizedId = session.studentId.trim().toLowerCase().replace(/\s+/g, '')
+    return `${normalizedId}@students.gema.local`
+  }
+  if (session.id && session.id.trim().length > 0) {
+    return `${session.id.trim().toLowerCase()}@students.gema.local`
+  }
+  return 'student@gema.local'
+}
 
 interface Message {
   id: string
@@ -24,9 +49,51 @@ export default function FloatingChat() {
   const [isTyping, setIsTyping] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [studentSession, setStudentSession] = useState<StudentSession | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
+
+  const studentDisplayName =
+    studentSession?.fullName && studentSession.fullName.trim().length > 0
+      ? studentSession.fullName.trim()
+      : studentSession?.studentId && studentSession.studentId.trim().length > 0
+      ? `Siswa ${studentSession.studentId.trim()}`
+      : null
+
+  const studentDisplayId =
+    studentSession?.studentId && studentSession.studentId.trim().length > 0
+      ? studentSession.studentId.trim()
+      : null
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const session = studentAuth.getSession()
+    if (session) {
+      setStudentSession(session)
+      const studentEmail = deriveStudentEmail(session)
+      const displayName =
+        session.fullName && session.fullName.trim().length > 0
+          ? session.fullName.trim()
+          : session.studentId && session.studentId.trim().length > 0
+          ? `Siswa ${session.studentId.trim()}`
+          : 'Siswa GEMA'
+
+      setUserInfo({ name: displayName, email: studentEmail })
+      setShowUserForm(false)
+
+      const storedStudentSessionId = localStorage.getItem(getChatStorageKey(studentEmail))
+      if (storedStudentSessionId) {
+        setSessionId(storedStudentSessionId)
+      }
+    } else {
+      const storedGuestSessionId = localStorage.getItem(getChatStorageKey())
+      if (storedGuestSessionId) {
+        setSessionId(storedGuestSessionId)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (isOpen && !isConnected) {
@@ -48,6 +115,18 @@ export default function FloatingChat() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !sessionId) return
+
+    const emailForStorage = studentSession
+      ? deriveStudentEmail(studentSession)
+      : userInfo.email && userInfo.email.trim().length > 0
+      ? userInfo.email.trim()
+      : 'guest@example.com'
+
+    localStorage.setItem(getChatStorageKey(emailForStorage), sessionId)
+  }, [sessionId, studentSession, userInfo.email])
 
   const connectToChat = () => {
     try {
@@ -138,6 +217,21 @@ export default function FloatingChat() {
     setCurrentMessage('')
     setIsSending(true)
 
+    const senderName =
+      (studentDisplayName && studentDisplayName.length > 0)
+        ? studentDisplayName
+        : userInfo.name && userInfo.name.trim().length > 0
+        ? userInfo.name.trim()
+        : studentDisplayId
+        ? `Siswa ${studentDisplayId}`
+        : 'Pengunjung'
+
+    const senderEmail = studentSession
+      ? deriveStudentEmail(studentSession)
+      : userInfo.email && userInfo.email.trim().length > 0
+      ? userInfo.email.trim()
+      : 'guest@example.com'
+
     // Add user message to chat
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -154,8 +248,8 @@ export default function FloatingChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText,
-          senderName: userInfo.name || 'Pengunjung',
-          senderEmail: userInfo.email || 'guest@example.com',
+          senderName,
+          senderEmail,
           sessionId: sessionId
         })
       })
@@ -287,9 +381,11 @@ export default function FloatingChat() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className={`fixed bottom-24 right-6 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 transition-all duration-300 ${
-          isMinimized ? 'h-16' : 'h-96'
-        }`}>
+        <div
+          className={`fixed bottom-24 right-6 w-[22rem] max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl border border-gray-200 z-50 transition-all duration-300 ${
+            isMinimized ? 'h-16' : 'h-[28rem]'
+          } flex flex-col overflow-hidden`}
+        >
           {/* Chat Header */}
           <div className="bg-blue-600 text-white p-4 rounded-t-lg flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -323,98 +419,130 @@ export default function FloatingChat() {
           </div>
 
           {!isMinimized && (
-            <>
-              {/* User Info Form */}
-              {showUserForm && (
-                <div className="p-4 border-b border-gray-200">
+            <div className="flex flex-1 flex-col overflow-hidden">
+              {studentSession && (
+                <div className="px-4 py-2 bg-blue-50 text-xs text-blue-700 border-b border-blue-100">
+                  Terhubung sebagai {studentDisplayName || 'Siswa GEMA'}
+                  {studentSession.email && studentSession.email.trim().length > 0
+                    ? ` (${studentSession.email.trim()})`
+                    : studentDisplayId
+                    ? ` (NIS ${studentDisplayId})`
+                    : ''}
+                </div>
+              )}
+
+              {showUserForm ? (
+                <div className="flex flex-1 flex-col gap-4 p-5">
+                  <div className="text-sm text-gray-600">
+                    Sebelum memulai chat, isi data singkatmu agar admin mudah mengenali.
+                  </div>
                   <form onSubmit={handleUserInfoSubmit} className="space-y-3">
-                    <div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-gray-500">Nama Lengkap</label>
                       <input
                         type="text"
                         placeholder="Nama Anda"
                         value={userInfo.name}
                         onChange={(e) => setUserInfo(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
                     </div>
-                    <div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-gray-500">Email (opsional)</label>
                       <input
                         type="email"
                         placeholder="Email (opsional)"
                         value={userInfo.email}
                         onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
                     >
                       Mulai Chat
                     </button>
                   </form>
                 </div>
-              )}
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 h-64">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-xs px-3 py-2 rounded-lg ${
-                      message.sender === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : message.senderName === 'System'
-                        ? 'bg-gray-100 text-gray-600 text-center text-xs'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}>
-                      {message.sender === 'admin' && message.senderName !== 'System' && (
-                        <div className="flex items-center gap-2 mb-1">
-                          <User className="w-3 h-3" />
-                          <span className="text-xs font-medium">{message.senderName}</span>
-                        </div>
-                      )}
-                      <p className="text-sm">{message.message}</p>
-                      <div className={`flex items-center justify-between mt-1 ${
-                        message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                      }`}>
-                        <span className="text-xs">{formatTime(message.timestamp)}</span>
-                        {message.sender === 'user' && getStatusIcon(message.status)}
+              ) : (
+                <>
+                  <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3 bg-white">
+                    {messages.length === 0 ? (
+                      <div className="flex h-full flex-col items-center justify-center text-center text-sm text-gray-500">
+                        <Bot className="w-8 h-8 mb-2 text-gray-300" />
+                        <p>Belum ada percakapan. Kirim pesan pertama kamu.</p>
                       </div>
-                    </div>
+                    ) : (
+                      messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[85%] rounded-2xl px-4 py-2 ${
+                              message.sender === 'user'
+                                ? 'bg-blue-600 text-white'
+                                : message.senderName === 'System'
+                                ? 'bg-gray-100 text-gray-600 text-center text-xs'
+                                : 'bg-gray-100 text-gray-900'
+                            }`}
+                          >
+                            {message.sender === 'admin' && message.senderName !== 'System' && (
+                              <div className="flex items-center gap-2 mb-1 text-xs font-medium text-gray-600">
+                                <User className="w-3 h-3" />
+                                <span>{message.senderName}</span>
+                              </div>
+                            )}
+                            <p className="text-sm whitespace-pre-line">{message.message}</p>
+                            <div
+                              className={`mt-1 flex items-center gap-2 text-xs ${
+                                message.sender === 'user' ? 'text-blue-100 justify-end' : 'text-gray-500 justify-between'
+                              }`}
+                            >
+                              <span>{formatTime(message.timestamp)}</span>
+                              {message.sender === 'user' && getStatusIcon(message.status)}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    <div ref={messagesEndRef} />
                   </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
 
-              {/* Message Input */}
-              {!showUserForm && (
-                <div className="p-4 border-t border-gray-200">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={currentMessage}
-                      onChange={(e) => setCurrentMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                      placeholder="Ketik pesan..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                      disabled={!isConnected || isSending}
-                    />
-                    <button
-                      onClick={sendMessage}
-                      disabled={!currentMessage.trim() || !isConnected || isSending}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white p-2 rounded-lg transition-colors"
-                      title="Kirim pesan"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
+                  <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
+                    <div className="flex items-end gap-2">
+                      <textarea
+                        value={currentMessage}
+                        onChange={(e) => setCurrentMessage(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            sendMessage()
+                          }
+                        }}
+                        rows={1}
+                        placeholder={isConnected ? 'Ketik pesan...' : 'Menghubungkan ke admin...'}
+                        className="flex-1 max-h-32 min-h-[44px] resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                        disabled={!isConnected || isSending}
+                      />
+                      <button
+                        onClick={sendMessage}
+                        disabled={!currentMessage.trim() || !isConnected || isSending}
+                        className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-400"
+                        title="Kirim pesan"
+                      >
+                        {isSending ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Send className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-[10px] text-gray-400">
+                      Tekan Enter untuk mengirim, Shift + Enter untuk baris baru.
+                    </p>
                   </div>
-                </div>
+                </>
               )}
-            </>
+            </div>
           )}
         </div>
       )}

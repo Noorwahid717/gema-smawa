@@ -14,14 +14,13 @@ import {
   LogOut,
   Image as ImageIcon,
   Megaphone,
-  MessageCircle,
-  UsersRound,
   GraduationCap,
   LayoutTemplate
 } from 'lucide-react'
 import Image from 'next/image'
 import NotificationPanel from './NotificationPanel'
 import { ToastProvider } from '@/components/feedback/toast'
+import AdminChatPanel from './AdminChatPanel'
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -62,8 +61,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: Home },
     { name: 'Kontak', href: '/admin/contacts', icon: MessageSquare },
-    { name: 'Live Chat', href: '/admin/chat', icon: MessageCircle },
-    { name: 'Multi Chat', href: '/admin/multi-chat', icon: UsersRound },
     { name: 'Pendaftaran', href: '/admin/registrations', icon: UserPlus },
     { name: 'Kegiatan', href: '/admin/activities', icon: Calendar },
     { name: 'Galeri', href: '/admin/gallery', icon: ImageIcon },
@@ -215,6 +212,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             {/* Right side - Notification and user info */}
             <div className="flex items-center gap-4">
               <NotificationPanel />
+              <AdminChatPanel />
               
               {/* User info - desktop only */}
               <div className="hidden md:flex items-center gap-3">

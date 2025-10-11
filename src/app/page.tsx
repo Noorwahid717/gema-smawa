@@ -3,8 +3,6 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import RegistrationForm from "@/components/forms/RegistrationForm";
-import FloatingChat from "@/components/chat/FloatingChat";
 import VideoLogo from "@/components/branding/VideoLogo";
 import AnimatedLogoDemo from "@/components/branding/AnimatedLogoDemo";
 import { 
@@ -231,7 +229,7 @@ export default function Home() {
                 Login Siswa
               </a>
               <a
-                href="#daftar"
+                href="#tentang"
                 className="border-2 border-white text-white hover:bg-white hover:text-blue-600 font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 inline-block text-center"
               >
                 Pelajari Lebih Lanjut
@@ -788,19 +786,16 @@ export default function Home() {
                 Daftar Sekarang
               </a>
               <a
-                href="#daftar"
+                href="/student/register"
                 className="border-2 border-white text-white hover:bg-white hover:text-gray-900 font-bold py-4 px-8 rounded-full text-xl transition-all duration-300 inline-flex items-center justify-center gap-2"
               >
                 <ChevronRight className="w-6 h-6" />
-                Pelajari Lebih Lanjut
+                Register Portal Siswa
               </a>
             </div>
           </motion.div>
         </div>
       </section>
-
-      {/* Registration Form */}
-      <RegistrationForm />
 
       {/* Footer */}
       <footer className="bg-black text-white py-16">
@@ -902,8 +897,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Floating Chat Component */}
-      <FloatingChat />
     </main>
   );
 }

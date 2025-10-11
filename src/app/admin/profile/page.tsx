@@ -469,11 +469,17 @@ export default function AdminProfilePage() {
 
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label
+                          htmlFor="admin-full-name"
+                          className="block text-sm font-medium text-gray-700 mb-2"
+                        >
                           Nama Lengkap
                         </label>
                         {editing ? (
                           <input
+                            id="admin-full-name"
+                            name="name"
+                            aria-label="Nama Lengkap"
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}

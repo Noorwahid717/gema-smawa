@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { studentAuth } from '@/lib/student-auth'
+import FloatingChat from '@/components/chat/FloatingChat'
 import {
   BookOpen,
   Upload,
@@ -1283,6 +1284,7 @@ export default function StudentDashboardPage() {
           </div>
         </div>
       </div>
+      <FloatingChat />
     </div>
   )
 }
