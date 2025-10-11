@@ -135,7 +135,6 @@ export default function FloatingChat() {
 
       eventSource.onopen = () => {
         setIsConnected(true)
-        addSystemMessage('Terhubung dengan admin GEMA')
       }
 
       eventSource.onmessage = (event) => {
@@ -185,8 +184,6 @@ export default function FloatingChat() {
 
       eventSource.onerror = () => {
         setIsConnected(false)
-        addSystemMessage('Koneksi terputus. Mencoba menyambung kembali...')
-        
         setTimeout(() => {
           if (eventSourceRef.current?.readyState === EventSource.CLOSED) {
             connectToChat()
@@ -433,29 +430,29 @@ export default function FloatingChat() {
 
               {showUserForm ? (
                 <div className="flex flex-1 flex-col gap-4 p-5">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-700">
                     Sebelum memulai chat, isi data singkatmu agar admin mudah mengenali.
                   </div>
                   <form onSubmit={handleUserInfoSubmit} className="space-y-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-gray-500">Nama Lengkap</label>
+                      <label className="text-xs font-medium text-gray-700">Nama Lengkap</label>
                       <input
                         type="text"
                         placeholder="Nama Anda"
                         value={userInfo.name}
                         onChange={(e) => setUserInfo(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-gray-500">Email (opsional)</label>
+                      <label className="text-xs font-medium text-gray-700">Email (opsional)</label>
                       <input
                         type="email"
                         placeholder="Email (opsional)"
                         value={userInfo.email}
                         onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <button
@@ -524,7 +521,7 @@ export default function FloatingChat() {
                         }}
                         rows={1}
                         placeholder={isConnected ? 'Ketik pesan...' : 'Menghubungkan ke admin...'}
-                        className="flex-1 max-h-32 min-h-[44px] resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                        className="flex-1 max-h-32 min-h-[44px] resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
                         disabled={!isConnected || isSending}
                       />
                       <button
