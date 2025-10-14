@@ -354,42 +354,8 @@ model Classroom {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  liveSessions LiveSession[]
-
   @@index([teacherId])
   @@map("classrooms")
-}
-
-model LiveSession {
-  id           String      @id @default(cuid())
-  classroomId  String
-  startsAt     DateTime    @default(now())
-  endsAt       DateTime?
-  status       String      @default("scheduled")
-  recordingUrl String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  classroom   Classroom  @relation(fields: [classroomId], references: [id], onDelete: Cascade)
-  attendances Attendance[]
-
-  @@index([classroomId])
-  @@map("live_sessions")
-}
-
-model Attendance {
-  id        String   @id @default(cuid())
-  sessionId String
-  studentId String
-  joinedAt  DateTime @default(now())
-  leftAt    DateTime?
-
-  session LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  student Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@unique([sessionId, studentId])
-  @@index([studentId])
-  @@map("attendances")
 }
 
 model Student {
@@ -415,7 +381,6 @@ model Student {
   submissions         Submission[]
   PortfolioSubmission PortfolioSubmission[]
   ArticleFeedback     ArticleFeedback[]
-  attendances         Attendance[]
 
   @@index([studentId])
   @@index([status])
