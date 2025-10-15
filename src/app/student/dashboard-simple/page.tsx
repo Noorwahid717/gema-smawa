@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { studentAuth } from '@/lib/student-auth'
 import FloatingChat from '@/components/chat/FloatingChat'
+import StudentLayout from '@/components/student/StudentLayout'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 import {
   BookOpen,
   Upload,
@@ -481,59 +483,10 @@ export default function StudentDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/"
-                className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                Beranda
-              </Link>
-              <div className="flex items-center gap-3">
-                <GraduationCap className="w-8 h-8 text-blue-600" />
-                <div>
-                  <h1 className="text-xl font-bold text-gray-800">Dashboard Siswa</h1>
-                  <p className="text-sm text-gray-600">GEMA - SMA Wahidiyah Kediri</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{student?.fullName}</p>
-                  <p className="text-xs text-gray-500">
-                    {student?.studentId} • {student?.class}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/student/profile"
-                  className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  <User className="w-4 h-4" />
-                  Profile
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+    <StudentLayout>
+      {/* Breadcrumb */}
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
+        <Breadcrumb items={[{ label: 'Dashboard' }]} />
       </div>
 
       {/* Main Content */}
@@ -1285,6 +1238,6 @@ export default function StudentDashboardPage() {
         </div>
       </div>
       <FloatingChat />
-    </div>
+    </StudentLayout>
   )
 }

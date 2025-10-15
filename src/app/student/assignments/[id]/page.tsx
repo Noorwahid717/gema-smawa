@@ -174,6 +174,26 @@ export default function StudentAssignmentDetail() {
     }
   }
 
+  const getProgressStatus = () => {
+    if (!assignment) return null
+
+    const now = new Date()
+    const dueDate = new Date(assignment.dueDate)
+    const hasSubmission = submissions.length > 0
+    const hasGradedSubmission = submissions.some(s => s.status === 'graded')
+
+    if (hasGradedSubmission) {
+      return { status: 'Selesai', color: 'bg-green-100 text-green-800', icon: CheckCircle }
+    } else if (hasSubmission) {
+      return { status: 'Sedang Berjalan', color: 'bg-blue-100 text-blue-800', icon: Clock }
+    } else if (now > dueDate) {
+      return { status: 'Terlambat', color: 'bg-red-100 text-red-800', icon: AlertCircle }
+    } else {
+      return { status: 'Belum Mulai', color: 'bg-gray-100 text-gray-800', icon: BookOpen }
+    }
+  }
+
+  const progressStatus = getProgressStatus()
   const isOverdue = assignment && new Date(assignment.dueDate) < new Date()
   const hasSubmissions = submissions.length > 0
 
@@ -266,7 +286,15 @@ export default function StudentAssignmentDetail() {
         >
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{assignment.title}</h2>
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-2xl font-bold text-gray-900">{assignment.title}</h2>
+                {progressStatus && (
+                  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${progressStatus.color}`}>
+                    <progressStatus.icon className="w-4 h-4" />
+                    {progressStatus.status}
+                  </span>
+                )}
+              </div>
               <p className="text-gray-600 mb-4">{assignment.description}</p>
               
               <div className="flex items-center text-sm text-gray-500 space-x-6">

@@ -1,0 +1,419 @@
+/* High Contrast Mode - WCAG AA Compliance */
+
+/* High contrast text colors */
+.text-high-contrast {
+  color: #000000 !important;
+}
+
+.dark .text-high-contrast {
+  color: #ffffff !important;
+}
+
+/* High contrast backgrounds */
+.bg-high-contrast {
+  background-color: #ffffff !important;
+  border: 2px solid #000000 !important;
+}
+
+.dark .bg-high-contrast {
+  background-color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* High contrast buttons */
+.btn-high-contrast {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #000000 !important;
+}
+
+.btn-high-contrast:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+.dark .btn-high-contrast {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+.dark .btn-high-contrast:hover {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* High contrast links */
+.link-high-contrast {
+  color: #0000ff !important;
+  text-decoration: underline !important;
+}
+
+.link-high-contrast:hover,
+.link-high-contrast:focus {
+  color: #ff0000 !important;
+  background-color: #ffff00 !important;
+}
+
+/* High contrast focus indicators */
+.focus-high-contrast:focus {
+  outline: 3px solid #ff0000 !important;
+  outline-offset: 2px !important;
+}
+
+/* High contrast form elements */
+.input-high-contrast {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+.input-high-contrast:focus {
+  border-color: #ff0000 !important;
+  outline: 3px solid #ffff00 !important;
+}
+
+.dark .input-high-contrast {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.dark .input-high-contrast:focus {
+  border-color: #00ff00 !important;
+  outline: 3px solid #ffff00 !important;
+}
+
+/* High contrast cards and containers */
+.card-high-contrast {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+.dark .card-high-contrast {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* High contrast navigation */
+.nav-high-contrast {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.nav-high-contrast a {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+}
+
+.nav-high-contrast a:hover,
+.nav-high-contrast a:focus {
+  color: #ffff00 !important;
+  background-color: #ff0000 !important;
+}
+
+/* High contrast status indicators */
+.status-success-high-contrast {
+  background-color: #008000 !important;
+  color: #ffffff !important;
+}
+
+.status-warning-high-contrast {
+  background-color: #ffa500 !important;
+  color: #000000 !important;
+}
+
+.status-error-high-contrast {
+  background-color: #ff0000 !important;
+  color: #ffffff !important;
+}
+
+.status-info-high-contrast {
+  background-color: #0000ff !important;
+  color: #ffffff !important;
+}
+
+/* High contrast modal overlays */
+.modal-overlay-high-contrast {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+.modal-content-high-contrast {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 3px solid #000000 !important;
+}
+
+.dark .modal-content-high-contrast {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 3px solid #ffffff !important;
+}
+
+/* High contrast loading states */
+.loading-high-contrast {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+  animation: pulse-high-contrast 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-high-contrast {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* High contrast disabled states */
+.disabled-high-contrast {
+  background-color: #cccccc !important;
+  color: #666666 !important;
+  cursor: not-allowed !important;
+}
+
+/* High contrast table */
+.table-high-contrast {
+  border-collapse: collapse;
+}
+
+.table-high-contrast th,
+.table-high-contrast td {
+  border: 2px solid #000000 !important;
+  padding: 8px 12px;
+}
+
+.table-high-contrast th {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.dark .table-high-contrast th {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* High contrast badges */
+.badge-high-contrast {
+  border: 2px solid #000000 !important;
+  font-weight: bold !important;
+}
+
+.badge-high-contrast-success {
+  background-color: #008000 !important;
+  color: #ffffff !important;
+}
+
+.badge-high-contrast-warning {
+  background-color: #ffa500 !important;
+  color: #000000 !important;
+}
+
+.badge-high-contrast-error {
+  background-color: #ff0000 !important;
+  color: #ffffff !important;
+}
+
+.badge-high-contrast-info {
+  background-color: #0000ff !important;
+  color: #ffffff !important;
+}
+
+/* High contrast progress bars */
+.progress-high-contrast {
+  background-color: #ffffff !important;
+  border: 2px solid #000000 !important;
+}
+
+.progress-bar-high-contrast {
+  background-color: #0000ff !important;
+}
+
+.dark .progress-high-contrast {
+  background-color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+.dark .progress-bar-high-contrast {
+  background-color: #00ff00 !important;
+}
+
+/* High contrast tooltips */
+.tooltip-high-contrast {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.dark .tooltip-high-contrast {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+/* High contrast dropdowns */
+.dropdown-high-contrast {
+  background-color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  color: #000000 !important;
+}
+
+.dropdown-item-high-contrast:hover,
+.dropdown-item-high-contrast:focus {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+}
+
+.dark .dropdown-high-contrast {
+  background-color: #000000 !important;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+.dark .dropdown-item-high-contrast:hover,
+.dark .dropdown-item-high-contrast:focus {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+}
+
+/* High contrast alerts */
+.alert-high-contrast {
+  border: 3px solid #000000 !important;
+  font-weight: bold !important;
+}
+
+.alert-success-high-contrast {
+  background-color: #90ee90 !important;
+  color: #000000 !important;
+  border-color: #008000 !important;
+}
+
+.alert-warning-high-contrast {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+  border-color: #ffa500 !important;
+}
+
+.alert-error-high-contrast {
+  background-color: #ffb6c1 !important;
+  color: #000000 !important;
+  border-color: #ff0000 !important;
+}
+
+.alert-info-high-contrast {
+  background-color: #87ceeb !important;
+  color: #000000 !important;
+  border-color: #0000ff !important;
+}
+
+/* High contrast icons */
+.icon-high-contrast {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  stroke-width: 2px !important;
+}
+
+/* High contrast gradients (remove gradients for better contrast) */
+.gradient-high-contrast {
+  background: none !important;
+  background-color: #ffffff !important;
+}
+
+.dark .gradient-high-contrast {
+  background: none !important;
+  background-color: #000000 !important;
+}
+
+/* High contrast shadows (remove shadows for better contrast) */
+.shadow-high-contrast {
+  box-shadow: none !important;
+  border: 2px solid #000000 !important;
+}
+
+.dark .shadow-high-contrast {
+  box-shadow: none !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* High contrast transitions (remove for better performance) */
+.transition-high-contrast {
+  transition: none !important;
+}
+
+/* High contrast animations (remove for better performance) */
+.animation-high-contrast {
+  animation: none !important;
+}
+
+/* High contrast hover effects (simplify for better contrast) */
+.hover-high-contrast:hover {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Focus visible for keyboard navigation */
+.focus-visible:focus-visible {
+  outline: 3px solid #ff0000;
+  outline-offset: 2px;
+}
+
+/* High contrast media queries for different devices */
+@media (prefers-contrast: high) {
+  * {
+    border-color: currentColor !important;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    border: 2px solid currentColor !important;
+  }
+
+  a {
+    text-decoration: underline !important;
+  }
+
+  img {
+    border: 1px solid currentColor !important;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

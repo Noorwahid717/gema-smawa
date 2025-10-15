@@ -1,5 +1,6 @@
 import Image from 'next/image'
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 import type { GalleryCategoryOption, GalleryItem } from '../types'
 
@@ -12,6 +13,56 @@ interface GalleryGridProps {
 }
 
 export function GalleryGrid({ items, isLoading, onEdit, onDelete, options }: GalleryGridProps) {
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+
+  const openModal = (index: number) => {
+    setSelectedImageIndex(index)
+  }
+
+  const closeModal = () => {
+    setSelectedImageIndex(null)
+  }
+
+  const navigateImage = (direction: 'prev' | 'next') => {
+    if (selectedImageIndex === null) return
+
+    const newIndex = direction === 'prev'
+      ? (selectedImageIndex - 1 + items.length) % items.length
+      : (selectedImageIndex + 1) % items.length
+
+    setSelectedImageIndex(newIndex)
+  }
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (selectedImageIndex === null) return
+
+    switch (event.key) {
+      case 'Escape':
+        closeModal()
+        break
+      case 'ArrowLeft':
+        navigateImage('prev')
+        break
+      case 'ArrowRight':
+        navigateImage('next')
+        break
+    }
+  }
+
+  useEffect(() => {
+    if (selectedImageIndex !== null) {
+      document.addEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = 'unset'
+    }
+  }, [selectedImageIndex])
+
   const categoryMap = options.reduce<Record<string, string>>((acc, option) => {
     acc[option.value] = option.label
     return acc
@@ -38,9 +89,10 @@ export function GalleryGrid({ items, isLoading, onEdit, onDelete, options }: Gal
               src={item.imageUrl || '/gema.svg'}
               alt={item.title}
               fill
-              className="object-cover"
+              className="object-cover cursor-pointer hover:opacity-90 transition-opacity"
               unoptimized
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              onClick={() => openModal(items.indexOf(item))}
             />
           </div>
           <div className="p-4 space-y-3">
@@ -89,6 +141,63 @@ export function GalleryGrid({ items, isLoading, onEdit, onDelete, options }: Gal
           </div>
         </div>
       ))}
+      
+      {/* Image Modal */}
+      {selectedImageIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90">
+          <div className="relative max-w-4xl max-h-screen p-4">
+            {/* Close button */}
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-2 z-10 p-2 text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Navigation buttons */}
+            {items.length > 1 && (
+              <>
+                <button
+                  onClick={() => navigateImage('prev')}
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 text-white hover:text-gray-300 transition-colors"
+                >
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+                <button
+                  onClick={() => navigateImage('next')}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-white hover:text-gray-300 transition-colors"
+                >
+                  <ChevronRight className="w-8 h-8" />
+                </button>
+              </>
+            )}
+
+            {/* Image */}
+            <div className="relative">
+              <Image
+                src={items[selectedImageIndex].imageUrl || '/gema.svg'}
+                alt={items[selectedImageIndex].title}
+                width={800}
+                height={600}
+                className="max-w-full max-h-screen object-contain"
+                unoptimized
+              />
+            </div>
+
+            {/* Image info */}
+            <div className="mt-4 text-white">
+              <h3 className="text-xl font-semibold">{items[selectedImageIndex].title}</h3>
+              {items[selectedImageIndex].description && (
+                <p className="text-gray-300 mt-2">{items[selectedImageIndex].description}</p>
+              )}
+              <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
+                <span>Kategori: {categoryMap[items[selectedImageIndex].category] ?? items[selectedImageIndex].category}</span>
+                <span>{new Date(items[selectedImageIndex].createdAt).toLocaleDateString('id-ID')}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

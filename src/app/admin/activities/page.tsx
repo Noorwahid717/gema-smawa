@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react'
-import { Calendar, MapPin, Users, Plus, Edit, Trash2 } from 'lucide-react'
+import { Calendar, MapPin, Users, Plus, Edit, Trash2, List, Grid } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
+import CalendarView from '@/components/admin/CalendarView'
 
 interface Activity {
   id: string
@@ -33,6 +34,7 @@ export default function ActivitiesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar')
   
   const [formData, setFormData] = useState<ActivityFormData>({
     title: '',
@@ -164,85 +166,120 @@ export default function ActivitiesPage() {
             <h1 className="text-2xl font-bold text-gray-900">Kelola Kegiatan</h1>
             <p className="text-gray-600">Kelola semua kegiatan dan workshop GEMA</p>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Tambah Kegiatan
-          </button>
-        </div>
-
-        {/* Activities List */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Daftar Kegiatan</h2>
-            
-            {isLoading ? (
-              <div className="text-center py-4">Loading...</div>
-            ) : activities.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                Belum ada kegiatan. Tambahkan kegiatan pertama Anda!
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {activities.map((activity) => (
-                  <div key={activity.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900">{activity.title}</h3>
-                        <p className="text-gray-600 mt-1">{activity.description}</p>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {formatDate(activity.date)}
-                          </div>
-                          {activity.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              {activity.location}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
-                            {activity.registered}/{activity.capacity || 'Unlimited'}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 ml-4">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          activity.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {activity.isActive ? 'Aktif' : 'Nonaktif'}
-                        </span>
-                        {activity.showOnHomepage && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                            Landing Page
-                          </span>
-                        )}
-                        <button
-                          onClick={() => handleEdit(activity)}
-                          className="p-2 text-blue-600 hover:bg-blue-100 rounded"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(activity.id)}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded"
-                          title="Hapus"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="flex items-center gap-3">
+            {/* View Toggle */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <List className="w-4 h-4 inline mr-1" />
+                List
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'calendar'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Grid className="w-4 h-4 inline mr-1" />
+                Kalender
+              </button>
+            </div>
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Tambah Kegiatan
+            </button>
           </div>
         </div>
+
+        {/* Activities View */}
+        {viewMode === 'calendar' ? (
+          <CalendarView
+            activities={activities}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        ) : (
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Daftar Kegiatan</h2>
+
+              {isLoading ? (
+                <div className="text-center py-4">Loading...</div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Belum ada kegiatan. Tambahkan kegiatan pertama Anda!
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activities.map((activity) => (
+                    <div key={activity.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-medium text-gray-900">{activity.title}</h3>
+                          <p className="text-gray-600 mt-1">{activity.description}</p>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {formatDate(activity.date)}
+                            </div>
+                            {activity.location && (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-4 h-4" />
+                                {activity.location}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <Users className="w-4 h-4" />
+                              {activity.registered}/{activity.capacity || 'Unlimited'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 ml-4">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            activity.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {activity.isActive ? 'Aktif' : 'Nonaktif'}
+                          </span>
+                          {activity.showOnHomepage && (
+                            <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                              Landing Page
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handleEdit(activity)}
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(activity.id)}
+                            className="p-2 text-red-600 hover:bg-red-100 rounded"
+                            title="Hapus"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Add/Edit Form Modal */}
         {showForm && (

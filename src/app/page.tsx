@@ -5,13 +5,19 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import VideoLogo from "@/components/branding/VideoLogo";
 import AnimatedLogoDemo from "@/components/branding/AnimatedLogoDemo";
-import { 
-  Code, 
-  Rocket, 
-  Target, 
-  Users, 
-  Trophy, 
-  Lightbulb, 
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { SkipLink } from "@/components/ui/SkipLink";
+import { SkeletonGrid, SkeletonCard } from "@/components/ui/Skeleton";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
+import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
+import {
+  Code,
+  Rocket,
+  Target,
+  Users,
+  Trophy,
+  Lightbulb,
   BookOpen,
   Wrench,
   Instagram,
@@ -58,6 +64,8 @@ interface Stats {
   activeProjects: number;
   completedWorkshops: number;
   achievements: number;
+  upcomingEventsToday: number;
+  upcomingEventsThisWeek: number;
 }
 
 export default function Home() {
@@ -68,9 +76,24 @@ export default function Home() {
     totalMembers: 0,
     activeProjects: 0,
     completedWorkshops: 0,
-    achievements: 0
+    achievements: 0,
+    upcomingEventsToday: 0,
+    upcomingEventsThisWeek: 0
   });
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState("hero");
+
+  // Keyboard navigation for main sections
+  useKeyboardNavigation({
+    onEnter: () => {
+      const sections = ["hero", "about", "vision", "activities", "benefits", "testimonials", "cta"];
+      const currentIndex = sections.indexOf(activeSection);
+      const nextIndex = (currentIndex + 1) % sections.length;
+      setActiveSection(sections[nextIndex]);
+      document.getElementById(sections[nextIndex])?.focus();
+    },
+    onEscape: () => setActiveSection("hero"),
+  });
 
   useEffect(() => {
     fetchPublicData();
@@ -94,7 +117,28 @@ export default function Home() {
           setAnnouncements(data.data.announcements || []);
           setGallery(data.data.gallery || []);
           console.log('Gallery data set:', data.data.gallery); // Debug log
-          setStats(data.data.stats || {});
+          
+          // Calculate upcoming events
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+          
+          const activitiesData = data.data.activities || [];
+          const upcomingToday = activitiesData.filter((activity: Activity) => {
+            const activityDate = new Date(activity.date);
+            return activityDate >= today && activityDate < new Date(today.getTime() + 24 * 60 * 60 * 1000);
+          }).length;
+          
+          const upcomingThisWeek = activitiesData.filter((activity: Activity) => {
+            const activityDate = new Date(activity.date);
+            return activityDate >= today && activityDate < weekFromNow;
+          }).length;
+          
+          setStats({
+            ...data.data.stats,
+            upcomingEventsToday: upcomingToday,
+            upcomingEventsThisWeek: upcomingThisWeek
+          });
         }
       }
     } catch (error) {
@@ -120,10 +164,36 @@ export default function Home() {
       default: return '📢';
     }
   };
+
+  // Skeleton component for loading states
+  const SkeletonCard = ({ className = "" }: { className?: string }) => (
+    <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg ${className}`}></div>
+  );
+
+  if (loading) {
+    return (
+      <ThemeProvider>
+        <div className="min-h-screen bg-white dark:bg-gray-900">
+          <SkipLink href="#main-content">Skip to main content</SkipLink>
+          <div className="fixed top-4 right-4 z-50">
+            <ThemeToggle />
+          </div>
+          <SkeletonGrid />
+        </div>
+      </ThemeProvider>
+    );
+  }
   return (
-    <main className="min-h-screen bg-white">
+    <ThemeProvider>
+      <main className="min-h-screen bg-white dark:bg-gray-900">
+        <SkipLink href="#main-content">Skip to main content</SkipLink>
+
+        {/* Theme Toggle */}
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
       {/* Hero Section */}
-      <section className="min-h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-green-400 relative overflow-hidden">
+      <section id="hero" className="min-h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-green-400 relative overflow-hidden dark:from-blue-700 dark:via-blue-800 dark:to-green-600" tabIndex={-1}>
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl"></div>
@@ -139,7 +209,7 @@ export default function Home() {
             className="text-center mb-8"
           >
             <div className="w-20 h-20 bg-white rounded-full mx-auto flex items-center justify-center mb-4 p-2 shadow-lg">
-              <Image
+              <OptimizedImage
                 src="/gema.svg"
                 alt="GEMA - Generasi Muda Informatika Logo"
                 width={60}
@@ -179,24 +249,45 @@ export default function Home() {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 max-w-2xl mx-auto"
+              className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 max-w-3xl mx-auto"
             >
-              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
-                <div className="text-2xl font-bold">{stats.totalMembers}</div>
-                <div className="text-sm opacity-90">Anggota Aktif</div>
-              </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
-                <div className="text-2xl font-bold">{stats.activeProjects}</div>
-                <div className="text-sm opacity-90">Proyek Aktif</div>
-              </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
-                <div className="text-2xl font-bold">{stats.completedWorkshops}</div>
-                <div className="text-sm opacity-90">Workshop Selesai</div>
-              </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
-                <div className="text-2xl font-bold">{stats.achievements}</div>
-                <div className="text-sm opacity-90">Prestasi</div>
-              </div>
+              {loading ? (
+                <>
+                  <SkeletonCard className="h-16" />
+                  <SkeletonCard className="h-16" />
+                  <SkeletonCard className="h-16" />
+                  <SkeletonCard className="h-16" />
+                  <SkeletonCard className="h-16" />
+                  <SkeletonCard className="h-16" />
+                </>
+              ) : (
+                <>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
+                    <div className="text-2xl font-bold">{stats.totalMembers}</div>
+                    <div className="text-sm opacity-90">Anggota Aktif</div>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
+                    <div className="text-2xl font-bold">{stats.activeProjects}</div>
+                    <div className="text-sm opacity-90">Proyek Aktif</div>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
+                    <div className="text-2xl font-bold">{stats.upcomingEventsToday}</div>
+                    <div className="text-sm opacity-90">Kegiatan Hari Ini</div>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
+                    <div className="text-2xl font-bold">{stats.completedWorkshops}</div>
+                    <div className="text-sm opacity-90">Workshop Selesai</div>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
+                    <div className="text-2xl font-bold">{stats.upcomingEventsThisWeek}</div>
+                    <div className="text-sm opacity-90">Event Minggu Ini</div>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30">
+                    <div className="text-2xl font-bold">{stats.achievements}</div>
+                    <div className="text-sm opacity-90">Prestasi</div>
+                  </div>
+                </>
+              )}
             </motion.div>
             
             <motion.div 
@@ -210,6 +301,7 @@ export default function Home() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-green-400 hover:bg-green-500 text-black font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center gap-2"
+                aria-label="Daftar sekarang melalui SPMB Kedunglo (buka di tab baru)"
               >
                 <ExternalLink className="w-5 h-5" />
                 Daftar Sekarang
@@ -217,6 +309,7 @@ export default function Home() {
               <a
                 href="/classroom"
                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center gap-2"
+                aria-label="Masuk ke Classroom GEMA"
               >
                 <BookOpen className="w-5 h-5" />
                 Classroom
@@ -224,6 +317,7 @@ export default function Home() {
               <a
                 href="/student/login"
                 className="bg-white text-blue-600 font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                aria-label="Login untuk siswa"
               >
                 <GraduationCap className="w-5 h-5" />
                 Login Siswa
@@ -231,6 +325,7 @@ export default function Home() {
               <a
                 href="#tentang"
                 className="border-2 border-white text-white hover:bg-white hover:text-blue-600 font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 inline-block text-center"
+                aria-label="Pelajari lebih lanjut tentang GEMA"
               >
                 Pelajari Lebih Lanjut
               </a>
@@ -248,7 +343,7 @@ export default function Home() {
               <div className="w-80 h-80 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20 p-8 flex items-center justify-center">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center p-2 shadow-lg">
-                    <Image
+                    <OptimizedImage
                       src="/gema.svg"
                       alt="GEMA Logo"
                       width={48}
@@ -257,19 +352,19 @@ export default function Home() {
                     />
                   </div>
                   <div className="w-16 h-16 bg-blue-300 rounded-lg flex items-center justify-center">
-                    <Users className="w-8 h-8 text-black" />
+                    <Users className="w-8 h-8 text-black" aria-label="Users icon" />
                   </div>
                   <div className="w-16 h-16 bg-green-400 rounded-lg flex items-center justify-center">
-                    <Rocket className="w-8 h-8 text-black" />
+                    <Rocket className="w-8 h-8 text-black" aria-label="Rocket icon" />
                   </div>
                   <div className="w-16 h-16 bg-yellow-400 rounded-lg flex items-center justify-center">
-                    <Lightbulb className="w-8 h-8 text-black" />
+                    <Lightbulb className="w-8 h-8 text-black" aria-label="Lightbulb icon" />
                   </div>
                   <div className="w-16 h-16 bg-purple-400 rounded-lg flex items-center justify-center">
-                    <Trophy className="w-8 h-8 text-black" />
+                    <Trophy className="w-8 h-8 text-black" aria-label="Trophy icon" />
                   </div>
                   <div className="w-16 h-16 bg-pink-400 rounded-lg flex items-center justify-center">
-                    <BookOpen className="w-8 h-8 text-black" />
+                    <BookOpen className="w-8 h-8 text-black" aria-label="Book icon" />
                   </div>
                 </div>
               </div>
@@ -279,7 +374,7 @@ export default function Home() {
       </section>
 
       {/* Video Logo Animation Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-6">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -330,7 +425,7 @@ export default function Home() {
             <div className="grid md:grid-cols-3 gap-8">
               <div className="bg-blue-50 rounded-xl p-6">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Code className="w-6 h-6 text-blue-600" />
+                  <Code className="w-6 h-6 text-blue-600" aria-label="Code icon" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Innovation</h3>
                 <p className="text-gray-600">Berinovasi dengan teknologi terdepan untuk masa depan yang lebih cerah</p>
@@ -338,7 +433,7 @@ export default function Home() {
 
               <div className="bg-green-50 rounded-xl p-6">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-6 h-6 text-green-600" />
+                  <Users className="w-6 h-6 text-green-600" aria-label="Users icon" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Collaboration</h3>
                 <p className="text-gray-600">Berkolaborasi dalam membangun generasi muda yang kompeten di bidang IT</p>
@@ -346,7 +441,7 @@ export default function Home() {
 
               <div className="bg-purple-50 rounded-xl p-6">
                 <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Rocket className="w-6 h-6 text-purple-600" />
+                  <Rocket className="w-6 h-6 text-purple-600" aria-label="Rocket icon" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Growth</h3>
                 <p className="text-gray-600">Berkembang bersama melalui pembelajaran dan praktik langsung</p>
@@ -358,7 +453,7 @@ export default function Home() {
 
       {/* Announcements Section */}
       {announcements.length > 0 && (
-        <section className="py-20 bg-blue-50">
+        <section className="py-20 bg-blue-50 dark:bg-gray-800">
           <div className="container mx-auto px-6">
             <motion.div 
               initial={{ opacity: 0, y: 50 }}
@@ -397,7 +492,7 @@ export default function Home() {
       )}
 
       {/* Vision & Mission */}
-      <section id="tentang" className="py-20 bg-gray-50">
+      <section id="about" className="py-20 bg-gray-50 dark:bg-gray-800" tabIndex={-1}>
         <div className="container mx-auto px-6">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -421,7 +516,7 @@ export default function Home() {
 
       {/* Upcoming Activities */}
       {activities.length > 0 && (
-        <section className="py-20 bg-white">
+        <section id="activities" className="py-20 bg-white dark:bg-gray-900" tabIndex={-1}>
           <div className="container mx-auto px-6">
             <motion.div 
               initial={{ opacity: 0, y: 50 }}
@@ -476,7 +571,7 @@ export default function Home() {
       )}
 
       {/* Activities */}
-      <section className="py-20 bg-white">
+      <section id="vision" className="py-20 bg-white dark:bg-gray-900" tabIndex={-1}>
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto">
             {/* Vision */}
@@ -530,7 +625,7 @@ export default function Home() {
       </section>
 
       {/* Activities */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="container mx-auto px-6">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -576,13 +671,14 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300"
+                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
               >
-                <div className={`w-16 h-16 ${activity.color} rounded-full mx-auto mb-6 flex items-center justify-center`}>
-                  <activity.icon className="w-8 h-8 text-white" />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-green-500/0 group-hover:from-blue-500/10 group-hover:to-green-500/10 transition-all duration-300"></div>
+                <div className={`w-16 h-16 ${activity.color} rounded-full mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 relative z-10`}>
+                  <activity.icon className="w-8 h-8 text-white group-hover:rotate-12 transition-transform duration-300" aria-label={`${activity.title} icon`} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">{activity.title}</h3>
-                <p className="text-gray-600">{activity.description}</p>
+                <h3 className="text-xl font-bold text-gray-800 mb-4 group-hover:text-blue-600 transition-colors duration-300 relative z-10">{activity.title}</h3>
+                <p className="text-gray-600 group-hover:text-gray-700 transition-colors duration-300 relative z-10">{activity.description}</p>
               </motion.div>
             ))}
           </div>
@@ -662,7 +758,7 @@ export default function Home() {
       )}
 
       {/* Benefits */}
-      <section className="py-20 bg-gray-50">
+      <section id="benefits" className="py-20 bg-gray-50 dark:bg-gray-800" tabIndex={-1}>
         <div className="container mx-auto px-6">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -718,7 +814,7 @@ export default function Home() {
       </section>
 
       {/* Testimonial */}
-      <section className="py-20 bg-gradient-to-r from-blue-50 to-green-50">
+      <section id="testimonials" className="py-20 bg-gradient-to-r from-blue-50 to-green-50 dark:from-gray-800 dark:to-gray-700" tabIndex={-1}>
         <div className="container mx-auto px-6">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -760,7 +856,7 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-gradient-to-r from-gray-900 to-blue-900">
+      <section id="cta" className="py-20 bg-gradient-to-r from-gray-900 to-blue-900 dark:from-gray-950 dark:to-blue-950" tabIndex={-1}>
         <div className="container mx-auto px-6 text-center">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -805,7 +901,7 @@ export default function Home() {
             <div className="text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start mb-4">
                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mr-3 p-1 shadow-md">
-                  <Image
+                  <OptimizedImage
                     src="/gema.svg"
                     alt="GEMA - Generasi Muda Informatika Logo"
                     width={40}
@@ -832,7 +928,7 @@ export default function Home() {
                   title="Instagram SMA Wahidiyah"
                   className="w-10 h-10 bg-gray-800 hover:bg-pink-600 rounded-full flex items-center justify-center transition-colors"
                 >
-                  <Instagram className="w-5 h-5" />
+                  <Instagram className="w-5 h-5" aria-label="Instagram icon" />
                 </a>
                 <a 
                   href="https://linktr.ee/smawahidiyah" 
@@ -841,7 +937,7 @@ export default function Home() {
                   title="Linktree SMA Wahidiyah"
                   className="w-10 h-10 bg-gray-800 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors"
                 >
-                  <Users className="w-5 h-5" />
+                  <Users className="w-5 h-5" aria-label="Users icon" />
                 </a>
                 <a 
                   href="https://spmbkedunglo.com" 
@@ -850,7 +946,7 @@ export default function Home() {
                   title="SPMB Kedunglo - Pendaftaran"
                   className="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors"
                 >
-                  <BookOpen className="w-5 h-5" />
+                  <BookOpen className="w-5 h-5" aria-label="Book icon" />
                 </a>
               </div>
             </div>
@@ -860,15 +956,15 @@ export default function Home() {
               <h4 className="text-xl font-bold mb-4">Kontak</h4>
               <div className="space-y-2 text-gray-400">
                 <div className="flex items-center justify-center md:justify-end">
-                  <Mail className="w-4 h-4 mr-2" />
+                  <Mail className="w-4 h-4 mr-2" aria-label="Mail icon" />
                   <span>smaswahidiyah@gmail.com</span>
                 </div>
                 <div className="flex items-center justify-center md:justify-end">
-                  <BookOpen className="w-4 h-4 mr-2" />
+                  <BookOpen className="w-4 h-4 mr-2" aria-label="Book icon" />
                   <span>spmbkedunglo.com</span>
                 </div>
                 <div className="flex items-center justify-center md:justify-end">
-                  <MapPin className="w-4 h-4 mr-2" />
+                  <MapPin className="w-4 h-4 mr-2" aria-label="Map pin icon" />
                   <span>Jl. KH. Wahid Hasyim, Kediri</span>
                 </div>
               </div>
@@ -898,5 +994,6 @@ export default function Home() {
       </footer>
 
     </main>
+    </ThemeProvider>
   );
 }
