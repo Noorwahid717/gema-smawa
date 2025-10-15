@@ -723,14 +723,14 @@ export default function ArticleDetailPage() {
             </Link>
 
             <Link
-              href="/student/portfolio/submit"
+              href="/student/coding-lab/submit"
               className="group bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg p-4 text-center hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Award className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                 <span className="text-lg">💎</span>
               </div>
-              <div className="font-semibold">Submit ke Portfolio</div>
+              <div className="font-semibold">Submit ke Coding Lab</div>
               <div className="text-sm opacity-90">Showcase Your Work</div>
             </Link>
           </div>

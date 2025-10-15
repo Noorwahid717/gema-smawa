@@ -631,20 +631,20 @@ export default function StudentDashboardPage() {
             )}
           </motion.div>
 
-          {/* Portfolio Card */}
+          {/* Coding Lab Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all cursor-pointer border border-gray-100 hover:border-green-200 group"
-            onClick={() => window.location.href = '/student/portfolio'}
+            onClick={() => window.location.href = '/student/coding-lab'}
           >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Target className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Portfolio</h3>
+                <h3 className="font-semibold text-gray-900">Coding Lab</h3>
                 <p className="text-sm text-gray-600">
                   {!statsLoading && dashboardStats ? 
                     `${dashboardStats.portfolioProgress}% progress` : 
@@ -737,8 +737,8 @@ export default function StudentDashboardPage() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold mb-1">{dashboardStats.portfolioSubmissions}</div>
-                  <div className="text-sm text-white/80">Portfolio</div>
-                  <div className="text-xs text-white/60">🎨 Karya</div>
+                    <div className="text-sm text-white/80">Coding Lab</div>
+                    <div className="text-xs text-white/60">🎨 Karya</div>
                 </div>
               </div>
 
@@ -803,7 +803,7 @@ export default function StudentDashboardPage() {
               </p>
             </motion.div>
 
-            {/* Portfolio Status */}
+            {/* Coding Lab Status */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -826,9 +826,9 @@ export default function StudentDashboardPage() {
                 )}
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">
-                {dashboardStats.status.portfolio === 'complete' ? 'Portfolio Lengkap! 🏆' :
+                dashboardStats.status.portfolio === 'complete' ? 'Coding Lab Lengkap! 🏆' :
                  dashboardStats.status.portfolio === 'in_progress' ? 'Sedang Dikerjakan 💪' :
-                 'Saatnya Mulai! ✨'}
+                 'Saatnya Mulai! ✨'
               </h4>
               <p className="text-sm text-gray-600">
                 {dashboardStats.portfolioSubmissions}/{dashboardStats.portfolioTasks} proyek selesai

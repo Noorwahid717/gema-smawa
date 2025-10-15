@@ -259,11 +259,11 @@ export default function AdminPortfolioPage() {
   return (
     <div className="p-6 space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-gray-900">Penilaian Web Portfolio</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Tinjau pengumpulan siswa, berikan komentar rubric, dan kirim nilai final secara terstruktur.
-        </p>
-      </header>
+            <h1 className="text-2xl font-semibold text-gray-900">Penilaian Coding Lab</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Tinjau pengumpulan siswa untuk Coding Lab, berikan komentar rubric, dan kirim nilai final.
+            </p>
+          </header>
 
       <section className="bg-white border border-gray-200 rounded-xl shadow-sm">
         <div className="border-b border-gray-200 px-4 py-3 flex flex-wrap gap-3 items-center justify-between">

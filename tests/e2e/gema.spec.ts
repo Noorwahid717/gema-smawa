@@ -256,8 +256,8 @@ test('Student can manage dashboard workflows end-to-end', async ({ page }) => {
   await expect(page.getByText('Riwayat Submission')).toBeVisible();
 
   // Portfolio builder with live preview
-  await page.goto('/student/portfolio');
-  await expect(page.getByRole('heading', { name: 'Metadata Portfolio' })).toBeVisible({ timeout: 20_000 });
+  await page.goto('/student/coding-lab');
+  await expect(page.getByRole('heading', { name: 'Metadata Project' })).toBeVisible({ timeout: 20_000 });
   await page.getByLabel('HTML').fill(`<h1 data-testid="portfolio-heading">${runId}</h1>`);
   await page.getByLabel('CSS').fill('body { font-family: sans-serif; background: #f8fafc; } h1 { color: #2563eb; }');
   await page.getByLabel('JavaScript').fill("document.body.dataset.preview = 'loaded';");

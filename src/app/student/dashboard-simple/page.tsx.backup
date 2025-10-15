@@ -524,7 +524,7 @@ export default function StudentDashboardPage() {
             transition={{ delay: 0.2 }}
           >
             <Link
-              href="/student/portfolio"
+              href="/student/coding-lab"
               className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow border border-gray-100 block group"
             >
               <div className="flex items-center gap-4 mb-4">

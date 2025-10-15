@@ -77,7 +77,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/student/dashboard-simple', icon: Home, active: false },
     { name: 'Assignments', href: '/student/assignments', icon: BookOpen, active: false },
-    { name: 'Portfolio', href: '/student/portfolio', icon: Upload, active: false },
+    { name: 'Coding Lab', href: '/student/coding-lab', icon: Upload, active: false },
     { name: 'Learning Path', href: '/student/learning-path', icon: Target, active: false },
   ]
 

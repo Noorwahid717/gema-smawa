@@ -95,7 +95,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Pendaftaran', href: '/admin/registrations', icon: UserPlus, active: false },
     { name: 'Kegiatan', href: '/admin/activities', icon: Calendar, active: false },
     { name: 'Galeri', href: '/admin/gallery', icon: ImageIcon, active: false },
-    { name: 'Portfolio', href: '/admin/portfolio', icon: LayoutTemplate, active: false },
+  { name: 'Coding Lab', href: '/admin/coding-lab', icon: LayoutTemplate, active: false },
     { name: 'Pengumuman', href: '/admin/announcements', icon: Megaphone, active: false },
     { name: 'Siswa', href: '/admin/students', icon: GraduationCap, active: false },
     { name: 'Admin', href: '/admin/users', icon: Users, active: false },
