@@ -905,15 +905,7 @@ export default function AdminClassroomPage() {
                   Checklist Proyek
                 </button>
               </div>
-              <Link
-                href="/classroom/gema-classroom-1/live"
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-lg animate-pulse hover:animate-none"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <circle cx="10" cy="10" r="8" />
-                </svg>
-                Mulai Live Class
-              </Link>
+              {/* Live Classroom feature removed; link intentionally omitted */}
               <Link
                 href="/admin/classroom/articles"
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"

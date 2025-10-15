@@ -1,3 +1,4 @@
+// This file is being removed as part of the live classroom folder deletion.
 'use client'
 
 import { AlertCircle } from 'lucide-react'
