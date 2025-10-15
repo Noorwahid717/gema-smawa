@@ -30,7 +30,9 @@ const chatMessages = {
   admin: `Halo! Pesan diterima ${runId}`,
 };
 
-async function loginAsAdmin(page: import('@playwright/test').Page, credentials = adminCredentials.super) {
+type AdminCred = { email: string; password: string };
+
+async function loginAsAdmin(page: import('@playwright/test').Page, credentials: AdminCred = adminCredentials.super) {
   await page.goto('/admin/login');
   await expect(page.getByRole('heading', { name: 'Masuk Admin' })).toBeVisible();
   await page.getByLabel('Email Admin').fill(credentials.email);
