@@ -19,6 +19,10 @@ model Admin {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  webLabAssignments WebLabAssignment[]
+  webLabEvaluations WebLabEvaluation[]
+
   @@map("admins")
 }
 
@@ -42,7 +46,7 @@ model Registration {
   id        String   @id @default(cuid())
   fullName  String
   email     String
-  phone     String
+  phone      String
   school    String?
   address   String?
   program   String   @default("GEMA")
@@ -381,6 +385,7 @@ model Student {
   submissions         Submission[]
   PortfolioSubmission PortfolioSubmission[]
   ArticleFeedback     ArticleFeedback[]
+  webLabSubmissions   WebLabSubmission[]
 
   @@index([studentId])
   @@index([status])
@@ -441,4 +446,107 @@ model ArticleFeedback {
   @@index([rating])
   @@index([timestamp])
   @@map("article_feedback")
+}
+
+// ===== WEB LAB MODELS =====
+
+enum WebLabDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum WebLabStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum WebLabSubmissionStatus {
+  DRAFT
+  SUBMITTED
+  GRADED
+  RETURNED
+}
+
+enum WebLabEvaluationStatus {
+  PENDING
+  COMPLETED
+  NEEDS_REVISION
+}
+
+model WebLabAssignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  difficulty  WebLabDifficulty @default(BEGINNER)
+  classLevel  String? // Target class level (XI-A, XI-B, etc.)
+  instructions String // Detailed instructions for the assignment
+  starterHtml String? // Starter HTML code
+  starterCss  String? // Starter CSS code
+  starterJs   String? // Starter JavaScript code
+  requirements Json? // JSON array of requirements/checklist
+  hints       Json? // JSON array of hints
+  solutionHtml String? // Solution HTML (for admin reference)
+  solutionCss  String? // Solution CSS (for admin reference)
+  solutionJs   String? // Solution JavaScript (for admin reference)
+  points      Int     @default(100)
+  timeLimit   Int? // Time limit in minutes
+  status      WebLabStatus @default(DRAFT)
+  createdBy   String // Admin ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  submissions WebLabSubmission[]
+  admin       Admin @relation(fields: [createdBy], references: [id])
+
+  @@index([status])
+  @@index([difficulty])
+  @@index([classLevel])
+  @@map("web_lab_assignments")
+}
+
+model WebLabSubmission {
+  id         String   @id @default(cuid())
+  assignmentId String
+  studentId  String
+  html       String?
+  css        String?
+  js         String?
+  status     WebLabSubmissionStatus @default(DRAFT)
+  submittedAt DateTime?
+  gradedAt   DateTime?
+  score      Int?
+  feedback   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  assignment WebLabAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  evaluation WebLabEvaluation?
+
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
+  @@unique([assignmentId, studentId])
+  @@map("web_lab_submissions")
+}
+
+model WebLabEvaluation {
+  id           String   @id @default(cuid())
+  submissionId String   @unique
+  evaluatedBy  String // Admin ID
+  score        Int
+  feedback     String?
+  checklist    Json? // JSON object with requirement evaluations
+  evaluatedAt  DateTime @default(now())
+
+  // Relations
+  submission WebLabSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  admin      Admin @relation(fields: [evaluatedBy], references: [id])
+
+  @@index([evaluatedBy])
+  @@map("web_lab_evaluations")
 }
