@@ -22,6 +22,7 @@ model Admin {
   // Relations
   webLabAssignments WebLabAssignment[]
   webLabEvaluations WebLabEvaluation[]
+  codingEvaluations CodingEvaluation[]
 
   @@map("admins")
 }
@@ -386,6 +387,7 @@ model Student {
   PortfolioSubmission PortfolioSubmission[]
   ArticleFeedback     ArticleFeedback[]
   webLabSubmissions   WebLabSubmission[]
+  codingSubmissions   CodingSubmission[]
 
   @@index([studentId])
   @@index([status])
@@ -549,4 +551,129 @@ model WebLabEvaluation {
 
   @@index([evaluatedBy])
   @@map("web_lab_evaluations")
+}
+
+// ===== CODING LAB MODELS =====
+
+enum CodingDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum CodingSubmissionStatus {
+  DRAFT
+  SUBMITTED
+  EVALUATING
+  APPROVED
+  REJECTED
+}
+
+model CodingLab {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  difficulty  CodingDifficulty @default(BEGINNER)
+  language    String   // Programming language (JavaScript, Python, Java, etc.)
+  points      Int      @default(100)
+  duration    Int      // Duration in minutes
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  exercises CodingExercise[]
+
+  @@index([difficulty])
+  @@index([language])
+  @@index([isActive])
+  @@map("coding_labs")
+}
+
+model CodingExercise {
+  id           String   @id @default(cuid())
+  labId        String
+  title        String
+  description  String
+  difficulty   CodingDifficulty @default(BEGINNER)
+  points       Int      @default(10)
+  timeLimit    Int      // Time limit in seconds
+  memoryLimit  Int      // Memory limit in MB
+  instructions String
+  starterCode  String
+  solutionCode String?
+  hints        String?  // JSON array of hints
+  tags         String?  // JSON array of tags
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  lab        CodingLab         @relation(fields: [labId], references: [id], onDelete: Cascade)
+  testCases  CodingTestCase[]
+  submissions CodingSubmission[]
+
+  @@index([labId])
+  @@index([difficulty])
+  @@index([isActive])
+  @@map("coding_exercises")
+}
+
+model CodingTestCase {
+  id            String   @id @default(cuid())
+  exerciseId    String
+  input         String
+  expectedOutput String
+  isHidden      Boolean  @default(false)
+  explanation   String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  exercise CodingExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([exerciseId])
+  @@map("coding_test_cases")
+}
+
+model CodingSubmission {
+  id            String                  @id @default(cuid())
+  exerciseId    String
+  studentId     String
+  code          String
+  status        CodingSubmissionStatus  @default(DRAFT)
+  score         Int?
+  executionTime Int?    // Execution time in milliseconds
+  memoryUsed    Int?    // Memory used in KB
+  testResults   Json?   // JSON array of test results
+  submittedAt   DateTime?
+  attempts      Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  exercise CodingExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  student  Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  evaluation CodingEvaluation?
+
+  @@index([exerciseId])
+  @@index([studentId])
+  @@index([status])
+  @@unique([exerciseId, studentId]) // One submission per student per exercise
+  @@map("coding_submissions")
+}
+
+model CodingEvaluation {
+  id           String   @id @default(cuid())
+  submissionId String   @unique
+  evaluatedBy  String   // Admin ID
+  overallScore Int
+  feedback     String?
+  evaluatedAt  DateTime @default(now())
+
+  // Relations
+  submission CodingSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  admin      Admin           @relation(fields: [evaluatedBy], references: [id])
+
+  @@index([evaluatedBy])
+  @@map("coding_evaluations")
 }

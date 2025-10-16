@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { seedPortfolio } from './seed-portfolio'
+import { seedCodingLab } from './seed-coding-lab'
 
 const prisma = new PrismaClient()
 
@@ -166,6 +167,9 @@ async function main() {
 
   // Seed portfolio assignment and sample submission snapshot
   await seedPortfolio(prisma)
+
+  // Seed coding lab with exercises and test cases
+  await seedCodingLab(prisma)
 }
 
 main()
