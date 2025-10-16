@@ -59,6 +59,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
     { name: 'Assignments', href: '/student/assignments', icon: BookOpen, active: false },
     { name: 'Web Lab', href: '/student/web-lab', icon: Code, active: false },
     { name: 'Coding Lab', href: '/student/coding-lab', icon: Upload, active: false },
+    { name: 'Profile', href: '/student/profile', icon: User, active: false },
     { name: 'Learning Path', href: '/student/learning-path', icon: Target, active: false },
   ]
 
@@ -87,7 +88,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile bottom navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="grid grid-cols-5 gap-1 px-2 py-2">
+        <div className="grid grid-cols-6 gap-1 px-2 py-2">
           {navigation.map((item) => (
             <Link
               key={item.name}
