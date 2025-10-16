@@ -59,7 +59,6 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
     { name: 'Assignments', href: '/student/assignments', icon: BookOpen, active: false },
     { name: 'Web Lab', href: '/student/web-lab', icon: Code, active: false },
     { name: 'Coding Lab', href: '/student/coding-lab', icon: Upload, active: false },
-    { name: 'Profile', href: '/student/profile', icon: User, active: false },
     { name: 'Learning Path', href: '/student/learning-path', icon: Target, active: false },
   ]
 
@@ -88,7 +87,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile bottom navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="grid grid-cols-6 gap-1 px-2 py-2">
+        <div className="grid grid-cols-5 gap-1 px-2 py-2">
           {navigation.map((item) => (
             <Link
               key={item.name}
@@ -319,9 +318,13 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
                 <p className="text-sm font-medium text-gray-700">{student.fullName}</p>
                 <p className="text-xs text-gray-500">{student.class}</p>
               </div>
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <Link
+                href="/student/profile"
+                className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center hover:shadow-lg transition-all duration-200 hover:scale-105"
+                title="Profile"
+              >
                 <User className="w-4 h-4 text-white" />
-              </div>
+              </Link>
             </div>
           </div>
         </div>
