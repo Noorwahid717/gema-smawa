@@ -63,7 +63,7 @@ export default function ContactPage() {
         setSubmitStatus('error')
         setErrorMessage(result.error || 'Gagal mengirim pesan')
       }
-    } catch (error) {
+    } catch (_error) {
       setSubmitStatus('error')
       setErrorMessage('Terjadi kesalahan. Silakan coba lagi.')
     } finally {

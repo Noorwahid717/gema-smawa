@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { studentAuth } from '@/lib/student-auth'
 import { motion } from 'framer-motion'
@@ -52,18 +52,7 @@ export default function StudentAssignmentDetail() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    const studentSession = studentAuth.getSession()
-    
-    if (!studentSession) {
-      router.push('/student/login?redirectTo=' + encodeURIComponent(`/student/assignments/${assignmentId}`))
-      return
-    }
-
-    fetchAssignmentDetails()
-  }, [router, assignmentId])
-
-  const fetchAssignmentDetails = async () => {
+  const fetchAssignmentDetails = useCallback(async () => {
     const studentSession = studentAuth.getSession()
     if (!studentSession) {
       router.push('/student/login')
@@ -92,7 +81,18 @@ export default function StudentAssignmentDetail() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [assignmentId, router])
+
+  useEffect(() => {
+    const studentSession = studentAuth.getSession()
+    
+    if (!studentSession) {
+      router.push('/student/login?redirectTo=' + encodeURIComponent(`/student/assignments/${assignmentId}`))
+      return
+    }
+
+    fetchAssignmentDetails()
+  }, [router, assignmentId, fetchAssignmentDetails])
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -197,7 +197,7 @@ export default function StudentAssignmentDetail() {
   const isOverdue = assignment && new Date(assignment.dueDate) < new Date()
   const hasSubmissions = submissions.length > 0
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -429,7 +429,7 @@ export default function StudentAssignmentDetail() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Riwayat Submission</h3>
             
             <div className="space-y-4">
-              {submissions.map((submission, index) => (
+              {submissions.map((submission) => (
                 <div key={submission.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">

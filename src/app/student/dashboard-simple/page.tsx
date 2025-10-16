@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { studentAuth } from '@/lib/student-auth'
 import FloatingChat from '@/components/chat/FloatingChat'
@@ -15,13 +14,9 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  LogOut,
   FileText,
-  GraduationCap,
   Target,
   Sparkles,
-  User,
-  ArrowLeft,
   Trophy,
   Flame,
   Star,
@@ -147,7 +142,6 @@ interface RoadmapProgressState {
 }
 
 export default function StudentDashboardPage() {
-  const router = useRouter()
   const [student, setStudent] = useState<{
     id: string;
     studentId: string;
@@ -199,12 +193,12 @@ export default function StudentDashboardPage() {
   };
 
   // Fetch dashboard statistics
-  const fetchDashboardStats = useCallback(async (currentStudentId: string) => {
+  const fetchDashboardStats = useCallback(async (studentId: string) => {
     try {
       setStatsLoading(true)
-      console.log('Fetching dashboard stats for student:', currentStudentId)
+      console.log('Fetching dashboard stats for student:', studentId)
 
-      const response = await fetch(`/api/student/dashboard?studentId=${currentStudentId}`)
+      const response = await fetch(`/api/student/dashboard?studentId=${studentId}`)
       if (!response.ok) {
         throw new Error(`Failed to fetch dashboard stats: ${response.status}`)
       }
@@ -224,7 +218,7 @@ export default function StudentDashboardPage() {
   }, [])
 
   // Fetch assignments
-  const fetchAssignments = useCallback(async (currentStudentId: string) => {
+  const fetchAssignments = useCallback(async (studentId: string) => {
     try {
       setAssignmentsLoading(true)
 
@@ -259,7 +253,7 @@ export default function StudentDashboardPage() {
   }, [])
 
   // Fetch roadmap stages
-  const fetchRoadmapStages = async () => {
+  const fetchRoadmapStages = useCallback(async () => {
     try {
       const response = await fetch('/api/roadmap/stages');
       if (response.ok) {
@@ -277,7 +271,7 @@ export default function StudentDashboardPage() {
       console.error('Error fetching roadmap stages:', error);
       setRoadmapStages([]);
     }
-  };
+  }, []);
 
   // Check authentication and load student data
   useEffect(() => {
@@ -322,7 +316,7 @@ export default function StudentDashboardPage() {
     }
     
     checkAuthAndLoadData()
-  }, [])
+  }, [fetchAssignments, fetchDashboardStats, fetchRoadmapStages])
 
   // Load progress from localStorage
   useEffect(() => {
@@ -383,17 +377,6 @@ export default function StudentDashboardPage() {
     }
   }, [roadmapProgress, roadmapStudentId, roadmapStudentName])
 
-  // Assignment utilities
-  const getAssignmentStatus = (assignment: AssignmentWithSubmissions) => {
-    const dueDate = new Date(assignment.dueDate)
-    const now = new Date()
-    const submitted = assignment.submissions.length > 0
-    
-    if (submitted) return { status: 'submitted', color: 'text-green-600', bg: 'bg-green-50', icon: CheckCircle }
-    if (dueDate < now) return { status: 'overdue', color: 'text-red-600', bg: 'bg-red-50', icon: AlertCircle }
-    return { status: 'pending', color: 'text-orange-600', bg: 'bg-orange-50', icon: Clock }
-  }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
       day: 'numeric',
@@ -417,16 +400,6 @@ export default function StudentDashboardPage() {
             [itemId]: checked
           }
         }
-      }
-    }));
-  };
-
-  const handleReflectionChange = (stageId: string, reflection: string) => {
-    setRoadmapProgress(prev => ({
-      ...prev,
-      [stageId]: {
-        ...prev[stageId],
-        reflection
       }
     }));
   };
@@ -457,19 +430,6 @@ export default function StudentDashboardPage() {
   const getTotalItems = (stage: RoadmapStage): number => {
     return stage.activityGroups?.reduce((acc, group) => acc + group.items.length, 0) ?? 0;
   };
-
-  const handleLogout = () => {
-    // Clear roadmap progress on logout
-    if (roadmapStudentId) {
-      localStorage.removeItem(`gema-roadmap-${roadmapStudentId}`)
-    }
-    
-    // Clear student session
-    studentAuth.clearSession()
-    
-    // Redirect to login
-    window.location.href = '/student/login'
-  }
 
   if (loading) {
     return (
@@ -826,9 +786,9 @@ export default function StudentDashboardPage() {
                 )}
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">
-                dashboardStats.status.portfolio === 'complete' ? 'Coding Lab Lengkap! 🏆' :
+                {dashboardStats.status.portfolio === 'complete' ? 'Coding Lab Lengkap! 🏆' :
                  dashboardStats.status.portfolio === 'in_progress' ? 'Sedang Dikerjakan 💪' :
-                 'Saatnya Mulai! ✨'
+                 'Saatnya Mulai! ✨'}
               </h4>
               <p className="text-sm text-gray-600">
                 {dashboardStats.portfolioSubmissions}/{dashboardStats.portfolioTasks} proyek selesai

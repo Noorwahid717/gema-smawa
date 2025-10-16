@@ -80,7 +80,7 @@ npm run dev
 - **Animation**: Framer Motion
 - **Icons**: Lucide React
 - **File Upload**: Built-in file handling system
-- **Real-time**: Server-Sent Events (SSE) untuk live featuresesmi program GEMA (Generasi Muda Informatika) SMA Wahidiyah Kediri yang memadukan **Landing Page**, **Admin Panel**, dan **Student Dashboard** yang terintegrasi penuh untuk manajemen pembelajaran digital.
+esmi program GEMA (Generasi Muda Informatika) SMA Wahidiyah Kediri yang memadukan **Landing Page**, **Admin Panel**, dan **Student Dashboard** yang terintegrasi penuh untuk manajemen pembelajaran digital.
 
 ## 🌟 Fitur Utama
 

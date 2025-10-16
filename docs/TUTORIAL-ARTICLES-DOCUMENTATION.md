@@ -345,7 +345,6 @@ interface ArticleFeedback {
 
 ### Phase 4: Advanced Features
 - [ ] Video tutorials integration
-- [ ] Live coding sessions
 - [ ] Peer review system
 - [ ] AI-powered coding assistant
 

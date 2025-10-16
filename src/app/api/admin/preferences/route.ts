@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     // For now, return default preferences
     // In the future, we can store these in database

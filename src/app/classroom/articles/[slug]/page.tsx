@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -85,19 +85,7 @@ export default function ArticleDetailPage() {
     navigation: false
   });
 
-  useEffect(() => {
-    if (slug) {
-      fetchArticle();
-    }
-  }, [slug]);
-
-  useEffect(() => {
-    if (article?.id) {
-      fetchFeedback();
-    }
-  }, [article?.id]);
-
-  const fetchArticle = async () => {
+  const fetchArticle = useCallback(async () => {
     try {
       const response = await fetch(`/api/classroom/articles/${slug}`);
       if (response.ok) {
@@ -116,9 +104,9 @@ export default function ArticleDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [slug]);
 
-  const fetchFeedback = async () => {
+  const fetchFeedback = useCallback(async () => {
     if (!article?.id) return;
     
     setFeedbackLoading(true);
@@ -135,7 +123,19 @@ export default function ArticleDetailPage() {
     } finally {
       setFeedbackLoading(false);
     }
-  };
+  }, [article?.id]);
+
+  useEffect(() => {
+    if (slug) {
+      fetchArticle();
+    }
+  }, [slug, fetchArticle]);
+
+  useEffect(() => {
+    if (article?.id) {
+      fetchFeedback();
+    }
+  }, [article?.id, fetchFeedback]);
 
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {

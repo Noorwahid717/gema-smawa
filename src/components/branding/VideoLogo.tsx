@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from 'react'
+import Image from 'next/image'
 import { Play, Pause, RotateCcw } from 'lucide-react'
 
 interface VideoLogoProps {
@@ -91,7 +92,7 @@ export default function VideoLogo({
   if (hasError) {
     return (
       <div className={`flex items-center justify-center bg-white rounded-lg ${className}`}>
-        <img
+        <Image
           src={fallbackImage}
           alt="GEMA Logo"
           width={width}

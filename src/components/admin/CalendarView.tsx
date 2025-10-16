@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Calendar, MapPin, Users, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Users } from 'lucide-react'
 
 interface Activity {
   id: string

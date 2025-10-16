@@ -8,7 +8,7 @@ import AnimatedLogoDemo from "@/components/branding/AnimatedLogoDemo";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { SkipLink } from "@/components/ui/SkipLink";
-import { SkeletonGrid, SkeletonCard } from "@/components/ui/Skeleton";
+import { SkeletonGrid } from "@/components/ui/Skeleton";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import {
@@ -713,20 +713,12 @@ export default function Home() {
                   <div className="h-48 relative overflow-hidden">
                     {item.image ? (
                       <>
-                        <img 
+                        <Image 
                           src={item.image} 
                           alt={item.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                          onError={(e) => {
-                            // Fallback jika gambar tidak bisa dimuat
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const fallback = target.parentElement!.querySelector('.fallback-content') as HTMLElement;
-                            if (fallback) {
-                              fallback.classList.remove('hidden');
-                              fallback.classList.add('flex');
-                            }
-                          }}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-300 group-hover:scale-110"
                         />
                         <div className="fallback-content absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400 hidden items-center justify-center">
                           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">

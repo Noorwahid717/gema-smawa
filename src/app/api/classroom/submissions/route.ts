@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
     const studentName = formData.get('studentName') as string;
     const studentId = formData.get('studentId') as string;
     const assignmentId = formData.get('assignmentId') as string;
-    const studentEmail = formData.get('studentEmail') as string;
     
     if (!file || !studentName || !studentId || !assignmentId) {
       return NextResponse.json(

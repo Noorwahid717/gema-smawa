@@ -100,7 +100,7 @@ export default function RegistrationForm() {
         setSubmitStatus('error');
         setSubmitMessage(data.message || 'Terjadi kesalahan');
       }
-    } catch (error) {
+    } catch (_error) {
       setSubmitStatus('error');
       setSubmitMessage('Terjadi kesalahan jaringan');
     } finally {

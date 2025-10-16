@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { 
   MessageSquare, 
   User, 
@@ -55,31 +55,33 @@ export default function MultiChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
 
+  const fetchSessions = useCallback(async () => {
+    try {
+      const filterParam = filter === 'mine' ? `?assignedTo=${session?.user?.id}` : filter === 'all' ? '?status=all' : `?status=${filter}`
+      console.log('Fetching sessions with filter:', filterParam)
+      
+      const response = await fetch(`/api/chat/sessions${filterParam}`)
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Sessions response:', result)
+        if (result.success) {
+          setSessions(result.data || [])
+        }
+      } else {
+        console.error('Failed to fetch sessions:', response.status)
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [filter, session?.user?.id])
+
   useEffect(() => {
     fetchSessions()
-  }, [])
+  }, [fetchSessions])
 
-  useEffect(() => {
-    connectToNotifications()
-    
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (activeSessionId) {
-      fetchSessionMessages(activeSessionId)
-    }
-  }, [activeSessionId])
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const connectToNotifications = () => {
+  const connectToNotifications = useCallback(() => {
     try {
       const eventSource = new EventSource('/api/notifications/sse')
       eventSourceRef.current = eventSource
@@ -147,29 +149,27 @@ export default function MultiChatPage() {
     } catch (error) {
       console.error('Failed to connect to notifications:', error)
     }
-  }
+  }, [activeSessionId, fetchSessions])
 
-  const fetchSessions = async () => {
-    try {
-      const filterParam = filter === 'mine' ? `?assignedTo=${session?.user?.id}` : filter === 'all' ? '?status=all' : `?status=${filter}`
-      console.log('Fetching sessions with filter:', filterParam)
-      
-      const response = await fetch(`/api/chat/sessions${filterParam}`)
-      if (response.ok) {
-        const result = await response.json()
-        console.log('Sessions response:', result)
-        if (result.success) {
-          setSessions(result.data || [])
-        }
-      } else {
-        console.error('Failed to fetch sessions:', response.status)
+  useEffect(() => {
+    connectToNotifications()
+    
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
       }
-    } catch (error) {
-      console.error('Error fetching sessions:', error)
-    } finally {
-      setIsLoading(false)
     }
-  }
+  }, [connectToNotifications])
+
+  useEffect(() => {
+    if (activeSessionId) {
+      fetchSessionMessages(activeSessionId)
+    }
+  }, [activeSessionId])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   const fetchSessionMessages = async (sessionId: string) => {
     try {

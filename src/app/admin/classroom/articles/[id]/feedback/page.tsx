@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { 
@@ -42,13 +42,7 @@ export default function AdminArticleFeedbackPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (articleId) {
-      fetchArticleAndFeedback();
-    }
-  }, [articleId]);
-
-  const fetchArticleAndFeedback = async () => {
+  const fetchArticleAndFeedback = useCallback(async () => {
     try {
       // Fetch article details
       const articleResponse = await fetch(`/api/classroom/articles/${articleId}`);
@@ -73,7 +67,13 @@ export default function AdminArticleFeedbackPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [articleId]);
+
+  useEffect(() => {
+    if (articleId) {
+      fetchArticleAndFeedback();
+    }
+  }, [articleId, fetchArticleAndFeedback]);
 
   const getRatingDistribution = () => {
     const distribution = [0, 0, 0, 0, 0]; // Index 0 = 1 star, Index 4 = 5 stars
@@ -247,7 +247,7 @@ export default function AdminArticleFeedbackPage() {
                 </div>
                 
                 <div className="space-y-3">
-                  {challengeStats.map(([challenge, count], index) => (
+                  {challengeStats.map(([challenge, count]) => (
                     <div key={challenge} className="flex items-center justify-between">
                       <span className="text-sm text-gray-700 truncate flex-1">{challenge}</span>
                       <span className="text-sm font-medium text-orange-600 ml-2">{count}</span>

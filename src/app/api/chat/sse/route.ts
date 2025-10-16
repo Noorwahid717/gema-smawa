@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
             type: 'heartbeat', 
             timestamp: new Date().toISOString() 
           })}\n\n`)
-        } catch (error) {
+        } catch (_error) {
           clearInterval(heartbeat)
           removeChatClient(controller)
         }
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         removeChatClient(controller)
         try {
           controller.close()
-        } catch (error) {
+        } catch (_error) {
           // Connection already closed
         }
       })

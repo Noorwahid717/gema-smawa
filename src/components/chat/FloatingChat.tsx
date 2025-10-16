@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { MessageCircle, X, Send, Minimize2, Maximize2, User, Bot } from 'lucide-react'
 import { studentAuth, type StudentSession } from '@/lib/student-auth'
 
@@ -95,40 +95,7 @@ export default function FloatingChat() {
     }
   }, [])
 
-  useEffect(() => {
-    if (isOpen && !isConnected) {
-      connectToChat()
-    }
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
-      }
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    if (isOpen && sessionId) {
-      loadChatHistory()
-    }
-  }, [isOpen, sessionId])
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !sessionId) return
-
-    const emailForStorage = studentSession
-      ? deriveStudentEmail(studentSession)
-      : userInfo.email && userInfo.email.trim().length > 0
-      ? userInfo.email.trim()
-      : 'guest@example.com'
-
-    localStorage.setItem(getChatStorageKey(emailForStorage), sessionId)
-  }, [sessionId, studentSession, userInfo.email])
-
-  const connectToChat = () => {
+  const connectToChat = useCallback(() => {
     try {
       const eventSource = new EventSource('/api/chat/sse')
       eventSourceRef.current = eventSource
@@ -193,7 +160,70 @@ export default function FloatingChat() {
     } catch (error) {
       console.error('Failed to connect to chat:', error)
     }
-  }
+  }, [isOpen, sessionId])
+
+  useEffect(() => {
+    if (isOpen && !isConnected) {
+      connectToChat()
+    }
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
+    }
+  }, [isOpen, isConnected, connectToChat])
+
+  const loadChatHistory = useCallback(async () => {
+    if (!sessionId) return
+    
+    try {
+      const response = await fetch(`/api/chat/send?sessionId=${sessionId}`)
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data) {
+          const historyMessages: Message[] = result.data.map((msg: {
+            id: string;
+            message: string;
+            senderType: string;
+            senderName: string;
+            createdAt: string;
+          }) => ({
+            id: msg.id,
+            message: msg.message,
+            sender: msg.senderType === 'admin' ? 'admin' : 'user',
+            senderName: msg.senderName,
+            timestamp: new Date(msg.createdAt),
+            status: 'delivered'
+          }))
+          setMessages(historyMessages)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error)
+    }
+  }, [sessionId])
+
+  useEffect(() => {
+    if (isOpen && sessionId) {
+      loadChatHistory()
+    }
+  }, [isOpen, sessionId, loadChatHistory])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !sessionId) return
+
+    const emailForStorage = studentSession
+      ? deriveStudentEmail(studentSession)
+      : userInfo.email && userInfo.email.trim().length > 0
+      ? userInfo.email.trim()
+      : 'guest@example.com'
+
+    localStorage.setItem(getChatStorageKey(emailForStorage), sessionId)
+  }, [sessionId, studentSession, userInfo.email])
 
   const addSystemMessage = (message: string) => {
     const systemMessage: Message = {
@@ -280,36 +310,6 @@ export default function FloatingChat() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const loadChatHistory = async () => {
-    if (!sessionId) return
-    
-    try {
-      const response = await fetch(`/api/chat/send?sessionId=${sessionId}`)
-      if (response.ok) {
-        const result = await response.json()
-        if (result.success && result.data) {
-          const historyMessages: Message[] = result.data.map((msg: {
-            id: string;
-            message: string;
-            senderType: string;
-            senderName: string;
-            createdAt: string;
-          }) => ({
-            id: msg.id,
-            message: msg.message,
-            sender: msg.senderType === 'admin' ? 'admin' : 'user',
-            senderName: msg.senderName,
-            timestamp: new Date(msg.createdAt),
-            status: 'delivered'
-          }))
-          setMessages(historyMessages)
-        }
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error)
-    }
   }
 
   const handleUserInfoSubmit = (e: React.FormEvent) => {

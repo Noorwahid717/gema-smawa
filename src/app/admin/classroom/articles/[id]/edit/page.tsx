@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -57,13 +57,7 @@ export default function EditArticlePage() {
     { value: 'programming', label: 'Programming' }
   ];
 
-  useEffect(() => {
-    if (articleId) {
-      fetchArticle();
-    }
-  }, [articleId]);
-
-  const fetchArticle = async () => {
+  const fetchArticle = useCallback(async () => {
     try {
       const response = await fetch(`/api/classroom/articles/${articleId}`);
       if (response.ok) {
@@ -90,7 +84,13 @@ export default function EditArticlePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [articleId]);
+
+  useEffect(() => {
+    if (articleId) {
+      fetchArticle();
+    }
+  }, [articleId, fetchArticle]);
 
   const generateSlug = (text: string) => {
     return text

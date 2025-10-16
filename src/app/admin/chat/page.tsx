@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { Send, Users, MessageSquare, Clock, User, Bot } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Send, Users, MessageSquare, User, Bot } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { useSession } from 'next-auth/react'
 
@@ -22,7 +22,7 @@ export default function LiveChatPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
-  const [connectedUsers, setConnectedUsers] = useState(0)
+  const [connectedUsers] = useState(0)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
@@ -31,21 +31,7 @@ export default function LiveChatPage() {
     fetchChatHistory()
   }, [])
 
-  useEffect(() => {
-    connectToLiveChat()
-    
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const connectToLiveChat = () => {
+  const connectToLiveChat = useCallback(() => {
     try {
       const eventSource = new EventSource('/api/notifications/sse')
       eventSourceRef.current = eventSource
@@ -110,7 +96,21 @@ export default function LiveChatPage() {
     } catch (error) {
       console.error('Failed to connect to live chat:', error)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    connectToLiveChat()
+    
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
+    }
+  }, [connectToLiveChat])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   const fetchChatHistory = async () => {
     try {

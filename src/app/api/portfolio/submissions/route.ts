@@ -22,7 +22,6 @@ export async function GET(request: Request) {
 
   // Check if there's a NextAuth session (for admin)
   const session = await getServerSession(authOptions)
-  const isAdmin = session && session.user.userType === 'admin'
   const isStudent = session && session.user.userType === 'student'
   
   // For students using custom auth, studentId will come from frontend
@@ -124,13 +123,12 @@ export async function POST(request: Request) {
   // Authentication will be handled by frontend with studentAuth
   
   const session = await getServerSession(authOptions)
-  const isAuthenticatedStudent = session && session.user.userType === 'student'
 
   let body: unknown
 
   try {
     body = await request.json()
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 

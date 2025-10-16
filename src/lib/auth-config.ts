@@ -264,7 +264,7 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       console.log('\n=========================================')
-      console.log('📋 SESSION CALLBACK')
+      console.log('📋SESSION CALLBACK')
       console.log('=========================================')
       console.log('🌍 Environment:', process.env.NODE_ENV)
       console.log('⏰ Timestamp:', new Date().toISOString())

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react'
-import { UserPlus, Search, Filter, Eye, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { UserPlus, Search, Filter, CheckCircle, XCircle, Clock } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 
 interface Registration {

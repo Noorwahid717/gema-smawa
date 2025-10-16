@@ -7,15 +7,12 @@ import {
   Home,
   BookOpen,
   Upload,
-  Calendar,
   User,
   LogOut,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  PlayCircle,
-  FileText,
   Target
 } from 'lucide-react'
 import Image from 'next/image'
@@ -45,7 +42,6 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
     class: string
     email: string
   } | null>(null)
-  const [activeActivities, setActiveActivities] = useState(0)
 
   // Check authentication
   useEffect(() => {
@@ -57,31 +53,12 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
     setStudent(session)
   }, [])
 
-  // Check for active activities (for Live Classroom)
-  useEffect(() => {
-    const checkActiveActivities = async () => {
-      try {
-        const response = await fetch('/api/activities/active')
-        if (response.ok) {
-          const data = await response.json()
-          setActiveActivities(data.count || 0)
-        }
-      } catch (error) {
-        console.error('Error checking active activities:', error)
-      }
-    }
-
-    checkActiveActivities()
-  }, [])
-
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/student/dashboard-simple', icon: Home, active: false },
     { name: 'Assignments', href: '/student/assignments', icon: BookOpen, active: false },
     { name: 'Coding Lab', href: '/student/coding-lab', icon: Upload, active: false },
     { name: 'Learning Path', href: '/student/learning-path', icon: Target, active: false },
   ]
-
-  // Live Classroom feature removed; no runtime injection
 
   // Mark active menu item
   navigation.forEach(item => {

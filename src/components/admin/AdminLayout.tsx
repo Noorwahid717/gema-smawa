@@ -1,7 +1,7 @@
 "use client";
 
 import { signOut, useSession } from 'next-auth/react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { 
   Menu,
   X,
@@ -17,9 +17,7 @@ import {
   GraduationCap,
   LayoutTemplate,
   ChevronLeft,
-  ChevronRight,
-  Video,
-  Activity as ActivityIcon
+  ChevronRight
 } from 'lucide-react'
 import Image from 'next/image'
 import NotificationPanel from './NotificationPanel'
@@ -42,24 +40,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { data: session, status } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [activeActivities, setActiveActivities] = useState(0)
-
-  // Check for active activities (role-based menu items)
-  useEffect(() => {
-    const checkActiveActivities = async () => {
-      try {
-        const response = await fetch('/api/admin/activities/active')
-        if (response.ok) {
-          const data = await response.json()
-          setActiveActivities(data.count || 0)
-        }
-      } catch (error) {
-        console.error('Error checking active activities:', error)
-      }
-    }
-    
-    checkActiveActivities()
-  }, [])
 
   // Authentication guard for admin routes
   if (status === 'loading') {
@@ -91,6 +71,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: Home, active: false },
+    { name: 'Chat', href: '/admin/chat', icon: MessageSquare, active: false },
     { name: 'Kontak', href: '/admin/contacts', icon: MessageSquare, active: false },
     { name: 'Pendaftaran', href: '/admin/registrations', icon: UserPlus, active: false },
     { name: 'Kegiatan', href: '/admin/activities', icon: Calendar, active: false },
@@ -101,8 +82,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Admin', href: '/admin/users', icon: Users, active: false },
     { name: 'Pengaturan', href: '/admin/settings', icon: Settings, active: false },
   ]
-
-  // Live Classroom feature removed: no runtime injection of live classroom menu
 
   // Mark active menu item based on current path
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''

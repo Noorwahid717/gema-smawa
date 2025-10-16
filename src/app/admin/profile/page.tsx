@@ -16,7 +16,6 @@ import {
   Camera,
   Lock,
   ArrowLeft,
-  Bell,
   Eye,
   EyeOff,
   CheckCircle,

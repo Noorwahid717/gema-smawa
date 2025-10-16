@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { Edit, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 import type { GalleryCategoryOption, GalleryItem } from '../types'
 
@@ -19,11 +19,11 @@ export function GalleryGrid({ items, isLoading, onEdit, onDelete, options }: Gal
     setSelectedImageIndex(index)
   }
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setSelectedImageIndex(null)
-  }
+  }, [])
 
-  const navigateImage = (direction: 'prev' | 'next') => {
+  const navigateImage = useCallback((direction: 'prev' | 'next') => {
     if (selectedImageIndex === null) return
 
     const newIndex = direction === 'prev'
@@ -31,9 +31,9 @@ export function GalleryGrid({ items, isLoading, onEdit, onDelete, options }: Gal
       : (selectedImageIndex + 1) % items.length
 
     setSelectedImageIndex(newIndex)
-  }
+  }, [selectedImageIndex, items])
 
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (selectedImageIndex === null) return
 
     switch (event.key) {
@@ -47,7 +47,7 @@ export function GalleryGrid({ items, isLoading, onEdit, onDelete, options }: Gal
         navigateImage('next')
         break
     }
-  }
+  }, [selectedImageIndex, closeModal, navigateImage])
 
   useEffect(() => {
     if (selectedImageIndex !== null) {
@@ -61,7 +61,7 @@ export function GalleryGrid({ items, isLoading, onEdit, onDelete, options }: Gal
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'unset'
     }
-  }, [selectedImageIndex])
+  }, [selectedImageIndex, handleKeyDown])
 
   const categoryMap = options.reduce<Record<string, string>>((acc, option) => {
     acc[option.value] = option.label

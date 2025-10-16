@@ -30,7 +30,7 @@ export async function POST(
 
   try {
     payload = await request.json()
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 

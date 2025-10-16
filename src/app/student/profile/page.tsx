@@ -3,13 +3,12 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { studentAuth } from '@/lib/student-auth'
 import {
   User,
   Mail,
   Phone,
-  MapPin,
-  School,
   Calendar,
   Edit3,
   Save,
@@ -19,7 +18,6 @@ import {
   ArrowLeft,
   Shield,
   Bell,
-  Palette,
   Eye,
   EyeOff,
   CheckCircle,
@@ -322,10 +320,12 @@ export default function StudentProfilePage() {
                 <div className="relative inline-block mb-4">
                   <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     {profile.profileImage ? (
-                      <img 
+                      <Image 
                         src={profile.profileImage} 
                         alt={profile.fullName}
-                        className="w-24 h-24 rounded-full object-cover"
+                        width={96}
+                        height={96}
+                        className="rounded-full object-cover"
                       />
                     ) : (
                       <User className="w-12 h-12 text-white" />

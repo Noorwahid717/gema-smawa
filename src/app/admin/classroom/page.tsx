@@ -905,7 +905,6 @@ export default function AdminClassroomPage() {
                   Checklist Proyek
                 </button>
               </div>
-              {/* Live Classroom feature removed; link intentionally omitted */}
               <Link
                 href="/admin/classroom/articles"
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
