@@ -24,6 +24,7 @@ import type {
   ClassroomSubmissionResponse,
   ClassroomProjectChecklistItem
 } from "@/types/classroom";
+import AdminLayout from '@/components/admin/AdminLayout'
 
 interface ProjectFormState {
   title: string;
@@ -867,7 +868,8 @@ export default function AdminClassroomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AdminLayout>
+      <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-6 py-4">
@@ -1241,6 +1243,7 @@ export default function AdminClassroomPage() {
         )}
       </div>
     </div>
+    </AdminLayout>
   );
 }
 

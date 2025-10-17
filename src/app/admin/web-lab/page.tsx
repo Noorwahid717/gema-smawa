@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { WebLabAssignment, WebLabDifficulty, WebLabStatus } from '@prisma/client'
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline'
+import AdminLayout from '@/components/admin/AdminLayout'
 
 interface AssignmentWithStats extends WebLabAssignment {
   admin: {
@@ -115,161 +116,163 @@ export default function AdminWebLabPage() {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Web Lab Management</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Manage HTML/CSS/JavaScript programming assignments for students.
-          </p>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <Link
-            href="/admin/web-lab/new"
-            className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
-            New Assignment
-          </Link>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="mt-8 flex gap-4">
-        <div>
-          <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700">
-            Status
-          </label>
-          <select
-            id="status-filter"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as WebLabStatus | 'ALL')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            <option value="ALL">All Status</option>
-            <option value={WebLabStatus.DRAFT}>Draft</option>
-            <option value={WebLabStatus.PUBLISHED}>Published</option>
-            <option value={WebLabStatus.ARCHIVED}>Archived</option>
-          </select>
+    <AdminLayout>
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="sm:flex sm:items-center">
+          <div className="sm:flex-auto">
+            <h1 className="text-2xl font-semibold text-gray-900">Web Lab Management</h1>
+            <p className="mt-2 text-sm text-gray-700">
+              Manage HTML/CSS/JavaScript programming assignments for students.
+            </p>
+          </div>
+          <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <Link
+              href="/admin/web-lab/new"
+              className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
+              New Assignment
+            </Link>
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="difficulty-filter" className="block text-sm font-medium text-gray-700">
-            Difficulty
-          </label>
-          <select
-            id="difficulty-filter"
-            value={filterDifficulty}
-            onChange={(e) => setFilterDifficulty(e.target.value as WebLabDifficulty | 'ALL')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            <option value="ALL">All Levels</option>
-            <option value={WebLabDifficulty.BEGINNER}>Beginner</option>
-            <option value={WebLabDifficulty.INTERMEDIATE}>Intermediate</option>
-            <option value={WebLabDifficulty.ADVANCED}>Advanced</option>
-          </select>
-        </div>
-      </div>
+        {/* Filters */}
+        <div className="mt-8 flex gap-4">
+          <div>
+            <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700">
+              Status
+            </label>
+            <select
+              id="status-filter"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as WebLabStatus | 'ALL')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              <option value="ALL">All Status</option>
+              <option value={WebLabStatus.DRAFT}>Draft</option>
+              <option value={WebLabStatus.PUBLISHED}>Published</option>
+              <option value={WebLabStatus.ARCHIVED}>Archived</option>
+            </select>
+          </div>
 
-      {/* Assignments Table */}
-      <div className="mt-8 flex flex-col">
-        <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                      Assignment
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Difficulty
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Class
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Status
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Submissions
-                    </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {assignments.map((assignment) => (
-                    <tr key={assignment.id}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
-                        <div className="flex items-center">
-                          <div>
-                            <div className="font-medium text-gray-900">{assignment.title}</div>
-                            <div className="text-gray-500">{assignment.points} points</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {getDifficultyBadge(assignment.difficulty)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {assignment.classLevel || 'All Classes'}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {getStatusBadge(assignment.status)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {assignment._count.submissions}
-                      </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/admin/web-lab/${assignment.id}`}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            <EyeIcon className="h-5 w-5" aria-hidden="true" />
-                          </Link>
-                          <Link
-                            href={`/admin/web-lab/${assignment.id}/edit`}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            <PencilIcon className="h-5 w-5" aria-hidden="true" />
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(assignment.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <TrashIcon className="h-5 w-5" aria-hidden="true" />
-                          </button>
-                        </div>
-                      </td>
+          <div>
+            <label htmlFor="difficulty-filter" className="block text-sm font-medium text-gray-700">
+              Difficulty
+            </label>
+            <select
+              id="difficulty-filter"
+              value={filterDifficulty}
+              onChange={(e) => setFilterDifficulty(e.target.value as WebLabDifficulty | 'ALL')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              <option value="ALL">All Levels</option>
+              <option value={WebLabDifficulty.BEGINNER}>Beginner</option>
+              <option value={WebLabDifficulty.INTERMEDIATE}>Intermediate</option>
+              <option value={WebLabDifficulty.ADVANCED}>Advanced</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Assignments Table */}
+        <div className="mt-8 flex flex-col">
+          <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                <table className="min-w-full divide-y divide-gray-300">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                        Assignment
+                      </th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        Difficulty
+                      </th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        Class
+                      </th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        Status
+                      </th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        Submissions
+                      </th>
+                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                        <span className="sr-only">Actions</span>
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {assignments.map((assignment) => (
+                      <tr key={assignment.id}>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
+                          <div className="flex items-center">
+                            <div>
+                              <div className="font-medium text-gray-900">{assignment.title}</div>
+                              <div className="text-gray-500">{assignment.points} points</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {getDifficultyBadge(assignment.difficulty)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {assignment.classLevel || 'All Classes'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {getStatusBadge(assignment.status)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {assignment._count.submissions}
+                        </td>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              href={`/admin/web-lab/${assignment.id}`}
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              <EyeIcon className="h-5 w-5" aria-hidden="true" />
+                            </Link>
+                            <Link
+                              href={`/admin/web-lab/${assignment.id}/edit`}
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              <PencilIcon className="h-5 w-5" aria-hidden="true" />
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(assignment.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <TrashIcon className="h-5 w-5" aria-hidden="true" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
+
+        {assignments.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No assignments found.</p>
+            <Link
+              href="/admin/web-lab/new"
+              className="mt-4 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+            >
+              Create your first assignment
+            </Link>
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 rounded-md bg-red-50 p-4">
+            <div className="text-sm text-red-700">{error}</div>
+          </div>
+        )}
       </div>
-
-      {assignments.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No assignments found.</p>
-          <Link
-            href="/admin/web-lab/new"
-            className="mt-4 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-          >
-            Create your first assignment
-          </Link>
-        </div>
-      )}
-
-      {error && (
-        <div className="mt-4 rounded-md bg-red-50 p-4">
-          <div className="text-sm text-red-700">{error}</div>
-        </div>
-      )}
-    </div>
+    </AdminLayout>
   )
 }
