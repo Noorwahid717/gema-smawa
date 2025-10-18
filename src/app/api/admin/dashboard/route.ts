@@ -22,7 +22,7 @@ export async function GET() {
       registrationsLastWeek,
       totalStudents,
       recentActivities,
-      totalPortfolioSubmissions,
+      totalCodingLabSubmissions,
       totalAssignments
     ] = await Promise.all([
       // Basic counts
@@ -71,7 +71,7 @@ export async function GET() {
           createdAt: { gte: lastMonth }
         }
       }),
-      prisma.portfolioSubmission.count(),
+      prisma.codingLabSubmission.count(),
       prisma.assignment.count()
     ])
 
@@ -91,7 +91,7 @@ export async function GET() {
       totalActivities,
       unreadContacts,
       totalStudents,
-      totalPortfolioSubmissions,
+      totalCodingLabSubmissions,
       totalAssignments,
       // Change statistics
       contactsChange,

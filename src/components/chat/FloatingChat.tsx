@@ -112,6 +112,7 @@ export default function FloatingChat() {
           
           if (data.type === 'admin_message') {
             // Only show admin messages for current session or if no session yet
+            console.log('Received admin message:', data, 'current sessionId:', sessionId)
             if (!sessionId || !data.sessionId || data.sessionId === sessionId) {
               const newMessage: Message = {
                 id: Date.now().toString(),
@@ -136,6 +137,8 @@ export default function FloatingChat() {
                   tag: 'chat-message'
                 })
               }
+            } else {
+              console.log('Admin message filtered out - session mismatch')
             }
           } else if (data.type === 'typing') {
             setIsTyping(data.isTyping)

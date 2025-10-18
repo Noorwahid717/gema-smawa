@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function seedAssignments() {
+export async function seedAssignments() {
   try {
     // Cari admin user untuk createdBy field
     let admin = await prisma.admin.findFirst({

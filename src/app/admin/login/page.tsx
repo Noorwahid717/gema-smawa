@@ -29,15 +29,6 @@ export default function AdminLogin() {
     setLoadingMessage('Memverifikasi kredensial...')
 
     try {
-      console.log('\n=========================================')
-      console.log('🔐 ADMIN LOGIN ATTEMPT')
-      console.log('=========================================')
-      console.log('📧 Email:', email)
-      console.log('🌐 Current URL:', window.location.href)
-      console.log('🎯 Target callback:', '/admin/dashboard')
-      console.log('⏰ Timestamp:', new Date().toISOString())
-      console.log('=========================================')
-      
       // Show loading feedback
       setToast({
         show: true,
@@ -53,18 +44,11 @@ export default function AdminLogin() {
         callbackUrl: '/admin/dashboard'
       })
 
-      console.log('\n=========================================')
-      console.log('📝 SIGNIN RESULT')
-      console.log('=========================================')
-      console.log('✅ OK:', result?.ok)
-      console.log('❌ Error:', result?.error)
-      console.log('📍 Status:', result?.status)
-      console.log('🔗 URL:', result?.url)
-      console.log('=========================================\n')
-      
+      console.log('SignIn result:', result)
+
       if (result?.error) {
-        console.error('❌ LOGIN FAILED:', result.error)
-        setError('Email atau password salah. Silakan periksa kredensial Anda.')
+        console.log('Login error:', result.error);
+        setError('Login gagal! Periksa email dan password Anda.')
         setToast({
           show: true,
           message: 'Login gagal! Periksa email dan password Anda.',
@@ -72,10 +56,7 @@ export default function AdminLogin() {
         })
         setIsLoading(false)
         setLoadingMessage('')
-      } else if (result?.ok) {
-        console.log('✅ LOGIN SUCCESSFUL!')
-        console.log('🔄 Preparing redirect to dashboard...')
-        
+      } else if (result?.ok || result?.status === 200 || (!result?.error && result?.url)) {
         setSuccess(true)
         setLoadingMessage('Login berhasil! Mengalihkan ke dashboard...')
         setToast({
@@ -84,14 +65,12 @@ export default function AdminLogin() {
           type: 'success'
         })
         
-        // Manual redirect to dashboard with delay for user feedback
+        // Wait a bit for session to be established, then redirect
         setTimeout(() => {
-          console.log('🚀 Executing redirect to /admin/dashboard')
-          console.log('🔗 Full URL:', window.location.origin + '/admin/dashboard')
           window.location.href = '/admin/dashboard'
-        }, 1500)
+        }, 1000)
       } else {
-        console.error('⚠️ UNEXPECTED LOGIN RESULT:', result)
+        console.log('Unexpected result:', result)
         setError('Login gagal. Silakan coba lagi.')
         setToast({
           show: true,
@@ -103,11 +82,7 @@ export default function AdminLogin() {
       }
       
     } catch (error) {
-      console.error('❌ LOGIN ERROR:', error)
-      console.error('Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      })
+      console.error('Login error:', error)
       setError('Terjadi kesalahan saat login. Silakan coba lagi.')
       setToast({
         show: true,
@@ -158,13 +133,13 @@ export default function AdminLogin() {
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Masuk Admin</h2>
           
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <div data-testid="error-message" className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            <div data-testid="success-message" className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
               ✅ Login berhasil! Mengalihkan ke dashboard...
             </div>
           )}

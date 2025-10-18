@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
   // Image optimization
   images: {
     domains: ['localhost', 'images.unsplash.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        port: '',
+        pathname: '/**',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
   },
   
@@ -49,6 +57,16 @@ const nextConfig: NextConfig = {
             value: 'public, max-age=31536000, immutable',
           },
         ],
+      },
+    ]
+  },
+
+  async redirects() {
+    return [
+      {
+        source: '/api/portfolio/:path*',
+        destination: '/api/coding-lab/:path*',
+        permanent: true,
       },
     ]
   },

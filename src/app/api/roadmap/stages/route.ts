@@ -244,13 +244,13 @@ export async function GET() {
             ]
           },
           {
-            id: "stage-5-portfolio",
-            title: "Portofolio Profesional 💼",
+            id: "stage-5-coding-lab",
+            title: "Coding Lab Profesional 💼",
             description: "Tampilkan profil dan karya terbaik tim.",
             items: [
-              { id: "stage-5-portfolio-1", label: "Buat halaman profil, skill, proyek, dan kontak." },
-              { id: "stage-5-portfolio-2", label: "Pastikan tampilan responsif di HP dan laptop." },
-              { id: "stage-5-portfolio-3", label: "Deploy gratis ke GitHub Pages atau Netlify." }
+              { id: "stage-5-coding-lab-1", label: "Buat halaman profil, skill, proyek, dan kontak." },
+              { id: "stage-5-coding-lab-2", label: "Pastikan tampilan responsif di HP dan laptop." },
+              { id: "stage-5-coding-lab-3", label: "Deploy gratis ke GitHub Pages atau Netlify." }
             ]
           }
         ]

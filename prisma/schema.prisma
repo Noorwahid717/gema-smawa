@@ -199,19 +199,19 @@ model Submission {
   @@map("submissions")
 }
 
-enum PortfolioSubmissionStatus {
+enum CodingLabSubmissionStatus {
   DRAFT
   SUBMITTED
   RETURNED
   GRADED
 }
 
-enum PortfolioArtifactType {
+enum CodingLabArtifactType {
   EDITOR
   UPLOAD
 }
 
-enum PortfolioRubricCriterion {
+enum CodingLabRubricCriterion {
   HTML_STRUCTURE
   CSS_RESPONSIVE
   JS_INTERACTIVITY
@@ -219,24 +219,27 @@ enum PortfolioRubricCriterion {
   CREATIVITY_BRIEF
 }
 
-model PortfolioTask {
+model CodingLabTask {
   id           String   @id @default(cuid())
   title        String
   description  String
   classLevel   String
   tags         String?
   instructions String?
+  project      Json?    // { title, description, rubric }
+  files        Json?    // { path, language, content }[]
+  previewMode  String?  // e.g., "iframe", "image"
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  submissions PortfolioSubmission[]
+  submissions CodingLabSubmission[]
 
   @@unique([title, classLevel])
-  @@map("portfolio_tasks")
+  @@map("coding_lab_tasks")
 }
 
-model PortfolioSubmission {
+model CodingLabSubmission {
   id            String                    @id @default(cuid())
   taskId        String
   studentId     String
@@ -244,7 +247,7 @@ model PortfolioSubmission {
   summary       String?
   classLevel    String
   tags          String?
-  status        PortfolioSubmissionStatus @default(DRAFT)
+  status        CodingLabSubmissionStatus @default(DRAFT)
   lastVersionId String?                   @unique
   grade         Int?
   reviewerId    String?
@@ -254,27 +257,27 @@ model PortfolioSubmission {
   draftHtml     String?
   draftCss      String?
   draftJs       String?
-  draftArtifact PortfolioArtifactType @default(EDITOR)
+  draftArtifact CodingLabArtifactType @default(EDITOR)
   draftArchivePath String?
   draftArchiveSize Int?
   draftMetadata String?
   createdAt     DateTime                  @default(now())
   updatedAt     DateTime                  @updatedAt
 
-  task        PortfolioTask         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task        CodingLabTask         @relation(fields: [taskId], references: [id], onDelete: Cascade)
   student     Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  lastVersion PortfolioVersion?     @relation("SubmissionLastVersion", fields: [lastVersionId], references: [id])
-  versions    PortfolioVersion[]    @relation("SubmissionVersions")
-  evaluations PortfolioEvaluation[]
+  lastVersion CodingLabVersion?     @relation("SubmissionLastVersion", fields: [lastVersionId], references: [id])
+  versions    CodingLabVersion[]    @relation("SubmissionVersions")
+  evaluations CodingLabEvaluation[]
 
   @@unique([studentId, taskId])
   @@index([taskId])
   @@index([studentId])
   @@index([status])
-  @@map("portfolio_submissions")
+  @@map("coding_lab_submissions")
 }
 
-model PortfolioVersion {
+model CodingLabVersion {
   id           String                @id @default(cuid())
   submissionId String
   title        String
@@ -284,53 +287,53 @@ model PortfolioVersion {
   html         String?
   css          String?
   js           String?
-  artifactType PortfolioArtifactType @default(EDITOR)
+  artifactType CodingLabArtifactType @default(EDITOR)
   archivePath  String?
   archiveSize  Int?
   metadata     String?
   createdAt    DateTime              @default(now())
   lockedAt     DateTime
 
-  submission          PortfolioSubmission  @relation("SubmissionVersions", fields: [submissionId], references: [id], onDelete: Cascade)
-  latestForSubmission PortfolioSubmission? @relation("SubmissionLastVersion")
-  evaluation          PortfolioEvaluation?
+  submission          CodingLabSubmission  @relation("SubmissionVersions", fields: [submissionId], references: [id], onDelete: Cascade)
+  latestForSubmission CodingLabSubmission? @relation("SubmissionLastVersion")
+  evaluation          CodingLabEvaluation?
 
   @@index([submissionId])
-  @@map("portfolio_versions")
+  @@map("coding_lab_versions")
 }
 
-model PortfolioEvaluation {
+model CodingLabEvaluation {
   id           String                    @id @default(cuid())
   submissionId String
   versionId    String                    @unique
   reviewerId   String
   overallScore Int
   overallNote  String?
-  status       PortfolioSubmissionStatus
+  status       CodingLabSubmissionStatus
   createdAt    DateTime                  @default(now())
   updatedAt    DateTime                  @updatedAt
 
-  submission   PortfolioSubmission    @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  version      PortfolioVersion       @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  rubricScores PortfolioRubricScore[]
+  submission   CodingLabSubmission    @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  version      CodingLabVersion       @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  rubricScores CodingLabRubricScore[]
 
   @@index([submissionId])
-  @@map("portfolio_evaluations")
+  @@map("coding_lab_evaluations")
 }
 
-model PortfolioRubricScore {
+model CodingLabRubricScore {
   id           String                   @id @default(cuid())
   evaluationId String
-  criterion    PortfolioRubricCriterion
+  criterion    CodingLabRubricCriterion
   score        Int
   maxScore     Int
   comment      String?
 
-  evaluation PortfolioEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  evaluation CodingLabEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
 
   @@unique([evaluationId, criterion])
   @@index([evaluationId])
-  @@map("portfolio_rubric_scores")
+  @@map("coding_lab_rubric_scores")
 }
 
 model ClassroomProjectChecklist {
@@ -384,7 +387,7 @@ model Student {
 
   // Relations
   submissions         Submission[]
-  PortfolioSubmission PortfolioSubmission[]
+  CodingLabSubmission CodingLabSubmission[]
   ArticleFeedback     ArticleFeedback[]
   webLabSubmissions   WebLabSubmission[]
   codingSubmissions   CodingSubmission[]
@@ -487,6 +490,7 @@ model WebLabAssignment {
   starterHtml String? // Starter HTML code
   starterCss  String? // Starter CSS code
   starterJs   String? // Starter JavaScript code
+  template    String? // e.g., "html-dasar", "landing-sederhana", "todo-js"
   requirements Json? // JSON array of requirements/checklist
   hints       Json? // JSON array of hints
   solutionHtml String? // Solution HTML (for admin reference)
@@ -528,12 +532,27 @@ model WebLabSubmission {
   assignment WebLabAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   evaluation WebLabEvaluation?
+  versions   WebLabSubmissionVersion[]
 
   @@index([assignmentId])
   @@index([studentId])
   @@index([status])
   @@unique([assignmentId, studentId])
   @@map("web_lab_submissions")
+}
+
+model WebLabSubmissionVersion {
+  id           String   @id @default(cuid())
+  submissionId String
+  html         String?
+  css          String?
+  js           String?
+  createdAt    DateTime @default(now())
+
+  submission WebLabSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@map("web_lab_submission_versions")
 }
 
 model WebLabEvaluation {

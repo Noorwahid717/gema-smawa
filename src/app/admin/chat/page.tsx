@@ -12,6 +12,7 @@ interface ChatMessage {
   senderEmail: string
   senderType: 'user' | 'admin'
   status: string
+  sessionId?: string
   createdAt: string
 }
 
@@ -135,6 +136,10 @@ export default function LiveChatPage() {
     setCurrentMessage('')
     setIsSending(true)
 
+    // Find the most recent user message to get sessionId
+    const lastUserMessage = [...messages].reverse().find(msg => msg.senderType === 'user')
+    const sessionId = lastUserMessage?.sessionId || null
+
     // Add admin message to chat immediately
     const adminMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -148,12 +153,14 @@ export default function LiveChatPage() {
     setMessages(prev => [...prev, adminMessage])
 
     try {
+      console.log('Admin sending message with sessionId:', sessionId)
       const response = await fetch('/api/chat/admin-reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText,
-          adminName: session?.user?.name || 'Admin GEMA'
+          adminName: session?.user?.name || 'Admin GEMA',
+          sessionId: sessionId
         })
       })
 

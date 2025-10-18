@@ -60,8 +60,8 @@ interface DashboardStats {
   completionPercentage: number
   totalSubmissions: number
   totalFeedbacks: number
-  portfolioSubmissions: number
-  portfolioTasks: number
+  codingLabSubmissions: number
+  codingLabTasks: number
   recentSubmissions: number
   recentFeedbacks: number
   weeklyProgress: number
@@ -72,11 +72,11 @@ interface DashboardStats {
   roadmapStages: number
   isActiveThisWeek: boolean
   hasOverdueAssignments: boolean
-  portfolioProgress: number
+  codingLabProgress: number
   weeklyGrowth: 'increasing' | 'stable'
   status: {
     assignments: 'needs_attention' | 'in_progress' | 'up_to_date'
-    portfolio: 'needs_start' | 'in_progress' | 'complete'
+    codingLab: 'needs_start' | 'in_progress' | 'complete'
     engagement: 'high' | 'medium' | 'low'
   }
 }
@@ -607,7 +607,7 @@ export default function StudentDashboardPage() {
                 <h3 className="font-semibold text-gray-900">Coding Lab</h3>
                 <p className="text-sm text-gray-600">
                   {!statsLoading && dashboardStats ? 
-                    `${dashboardStats.portfolioProgress}% progress` : 
+                    `${dashboardStats.codingLabProgress}% progress` : 
                     'Kelola proyek Anda'
                   }
                 </p>
@@ -621,7 +621,7 @@ export default function StudentDashboardPage() {
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all"
-                    style={{ width: `${dashboardStats.portfolioProgress}%` }}
+                    style={{ width: `${dashboardStats.codingLabProgress}%` }}
                   ></div>
                 </div>
               </div>
@@ -696,7 +696,7 @@ export default function StudentDashboardPage() {
                   <div className="text-xs text-white/60">🚀 Fresh!</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold mb-1">{dashboardStats.portfolioSubmissions}</div>
+                  <div className="text-2xl font-bold mb-1">{dashboardStats.codingLabSubmissions}</div>
                     <div className="text-sm text-white/80">Coding Lab</div>
                     <div className="text-xs text-white/60">🎨 Karya</div>
                 </div>
@@ -769,29 +769,29 @@ export default function StudentDashboardPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.7 }}
               className={`rounded-xl p-6 text-center ${
-                dashboardStats.status.portfolio === 'complete' 
+                dashboardStats.status.codingLab === 'complete' 
                   ? 'bg-green-50 border border-green-200' :
-                dashboardStats.status.portfolio === 'in_progress'
+                dashboardStats.status.codingLab === 'in_progress'
                   ? 'bg-blue-50 border border-blue-200' :
                   'bg-purple-50 border border-purple-200'
               }`}
             >
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white flex items-center justify-center shadow-sm">
-                {dashboardStats.status.portfolio === 'complete' ? (
+                {dashboardStats.status.codingLab === 'complete' ? (
                   <Award className="w-8 h-8 text-green-500" />
-                ) : dashboardStats.status.portfolio === 'in_progress' ? (
+                ) : dashboardStats.status.codingLab === 'in_progress' ? (
                   <Upload className="w-8 h-8 text-blue-500" />
                 ) : (
                   <Sparkles className="w-8 h-8 text-purple-500" />
                 )}
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">
-                {dashboardStats.status.portfolio === 'complete' ? 'Coding Lab Lengkap! 🏆' :
-                 dashboardStats.status.portfolio === 'in_progress' ? 'Sedang Dikerjakan 💪' :
+                {dashboardStats.status.codingLab === 'complete' ? 'Coding Lab Lengkap! 🏆' :
+                 dashboardStats.status.codingLab === 'in_progress' ? 'Sedang Dikerjakan 💪' :
                  'Saatnya Mulai! ✨'}
               </h4>
               <p className="text-sm text-gray-600">
-                {dashboardStats.portfolioSubmissions}/{dashboardStats.portfolioTasks} proyek selesai
+                {dashboardStats.codingLabSubmissions}/{dashboardStats.codingLabTasks} proyek selesai
               </p>
             </motion.div>
 
@@ -937,12 +937,12 @@ export default function StudentDashboardPage() {
                               📝 {dashboardStats.pendingAssignments} assignments menunggu
                             </div>
                           )}
-                          {dashboardStats.portfolioTasks > dashboardStats.portfolioSubmissions && (
+                          {dashboardStats.codingLabTasks > dashboardStats.codingLabSubmissions && (
                             <div className="text-sm text-gray-600">
-                              🎨 Portfolio perlu diupdate
+                              🎨 Coding Lab perlu diupdate
                             </div>
                           )}
-                          {dashboardStats.pendingAssignments === 0 && dashboardStats.portfolioProgress === 100 && (
+                          {dashboardStats.pendingAssignments === 0 && dashboardStats.codingLabProgress === 100 && (
                             <div className="text-sm text-green-600 font-medium">
                               🎉 Semua up to date!
                             </div>

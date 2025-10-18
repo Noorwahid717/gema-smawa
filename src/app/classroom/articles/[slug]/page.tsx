@@ -244,8 +244,8 @@ export default function ArticleDetailPage() {
       },
       {
         id: 6,
-        title: "Portfolio Optimization",
-        description: "Optimasi performa dan SEO untuk portfolio profesional",
+        title: "Coding Lab Optimization",
+        description: "Optimasi performa dan SEO untuk coding lab profesional",
         icon: <Award className="w-6 h-6 text-purple-500" />
       }
     ];

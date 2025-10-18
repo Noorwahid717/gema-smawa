@@ -196,8 +196,8 @@ export async function POST(request: NextRequest) {
         maxSubmissions: 1
       },
       {
-        title: "💼 Proyek 5.3: Portfolio Website",
-        description: "Buat website portfolio profesional untuk menampilkan semua project yang telah dikerjakan.",
+        title: "💼 Proyek 5.3: Coding Lab Website",
+        description: "Buat website coding lab profesional untuk menampilkan semua project yang telah dikerjakan.",
         subject: "Final Project",
         instructions: [
           "Buat halaman Home, About, Projects, Contact",

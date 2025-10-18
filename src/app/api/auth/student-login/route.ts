@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (student.status !== 'active') {
+    if (student.status.toLowerCase() !== 'active') {
       console.log('Student account not active:', student.status)
       return NextResponse.json(
         { success: false, error: 'Student account is not active' },

@@ -240,13 +240,13 @@ const roadmapData = [
     ],
     advancedTargets: [
       {
-        title: "💼 Proyek 5: Portofolio Profesional",
-        description: "Buat portofolio berisi: profil, skill, proyek, kontak (responsif)",
+        title: "💼 Proyek 5: Coding Lab Profesional",
+        description: "Buat coding lab berisi: profil, skill, proyek, kontak (responsif)",
         completed: false
       },
       {
         title: "🚀 Deploy ke GitHub Pages/Netlify",
-        description: "Deploy portofolio secara gratis ke internet",
+        description: "Deploy coding lab secara gratis ke internet",
         completed: false
       },
       {
@@ -294,8 +294,8 @@ const roadmapData = [
         completed: false
       },
       {
-        title: "🌟 Proyek Portfolio Advanced",
-        description: "Rebuild portofolio menggunakan framework modern",
+        title: "🌟 Proyek Coding Lab Advanced",
+        description: "Rebuild coding lab menggunakan framework modern",
         completed: false
       },
       {

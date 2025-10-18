@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
       pendingAssignments,
       overdueAssignments,
       
-      // Portfolio data
-      portfolioSubmissions,
-      portfolioTasks,
+      // Coding Lab data
+      codingLabSubmissions,
+      codingLabTasks,
       
       // Recent activities and engagement
       recentSubmissions,
@@ -130,12 +130,12 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Portfolio data
-      prisma.portfolioSubmission.count({
+      // Coding Lab data
+      prisma.codingLabSubmission.count({
         where: { studentId: studentId }
       }),
 
-      prisma.portfolioTask.count(),
+      prisma.codingLabTask.count(),
 
       // Recent activities
       prisma.submission.count({
@@ -173,8 +173,8 @@ export async function GET(request: NextRequest) {
         where: { status: 'published' }
       }),
 
-      // Portfolio tasks as learning stages
-      prisma.portfolioTask.count()
+      // Coding Lab tasks as learning stages
+      prisma.codingLabTask.count()
     ])
 
     // Calculate completion percentage
@@ -209,8 +209,8 @@ export async function GET(request: NextRequest) {
       // Engagement metrics
       totalSubmissions: studentSubmissions,
       totalFeedbacks: studentFeedbacks,
-      portfolioSubmissions,
-      portfolioTasks,
+      codingLabSubmissions,
+      codingLabTasks,
       
       // Recent activity
       recentSubmissions,
@@ -229,7 +229,7 @@ export async function GET(request: NextRequest) {
       // Performance indicators
       isActiveThisWeek: (recentSubmissions + recentFeedbacks) > 0,
       hasOverdueAssignments: overdueAssignments > 0,
-      portfolioProgress: portfolioTasks > 0 ? Math.round((portfolioSubmissions / portfolioTasks) * 100) : 0,
+      codingLabProgress: codingLabTasks > 0 ? Math.round((codingLabSubmissions / codingLabTasks) * 100) : 0,
       
       // Weekly comparison
       weeklyGrowth: weeklyProgress > 0 ? 'increasing' : 'stable',
@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
       // Status indicators
       status: {
         assignments: overdueAssignments > 0 ? 'needs_attention' : pendingAssignments > 0 ? 'in_progress' : 'up_to_date',
-        portfolio: portfolioSubmissions === 0 ? 'needs_start' : portfolioSubmissions < portfolioTasks ? 'in_progress' : 'complete',
+        codingLab: codingLabSubmissions === 0 ? 'needs_start' : codingLabSubmissions < codingLabTasks ? 'in_progress' : 'complete',
         engagement: engagementScore >= 70 ? 'high' : engagementScore >= 40 ? 'medium' : 'low'
       }
     }

@@ -20,12 +20,10 @@ import {
   Lightbulb,
   BookOpen,
   Wrench,
-  Instagram,
   Mail,
   MapPin,
   Calendar,
   MapPinIcon,
-  ExternalLink,
   ChevronRight,
   Star,
   GraduationCap
@@ -185,7 +183,7 @@ export default function Home() {
   }
   return (
     <ThemeProvider>
-      <main className="min-h-screen bg-white dark:bg-gray-900">
+      <main id="main-content" className="min-h-screen bg-white dark:bg-gray-900">
         <SkipLink href="#main-content">Skip to main content</SkipLink>
 
         {/* Theme Toggle */}
@@ -297,16 +295,6 @@ export default function Home() {
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <a
-                href="https://spmbkedunglo.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-green-400 hover:bg-green-500 text-black font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center gap-2"
-                aria-label="Daftar sekarang melalui SPMB Kedunglo (buka di tab baru)"
-              >
-                <ExternalLink className="w-5 h-5" />
-                Daftar Sekarang
-              </a>
-              <a
                 href="/classroom"
                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center gap-2"
                 aria-label="Masuk ke Classroom GEMA"
@@ -321,13 +309,6 @@ export default function Home() {
               >
                 <GraduationCap className="w-5 h-5" />
                 Login Siswa
-              </a>
-              <a
-                href="#tentang"
-                className="border-2 border-white text-white hover:bg-white hover:text-blue-600 font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 inline-block text-center"
-                aria-label="Pelajari lebih lanjut tentang GEMA"
-              >
-                Pelajari Lebih Lanjut
               </a>
             </motion.div>
           </div>
@@ -782,8 +763,8 @@ export default function Home() {
               },
               {
                 icon: "📂",
-                title: "Bangun portofolio digital",
-                description: "Membuat portfolio yang menarik untuk masa depan karirmu"
+                title: "Bangun coding lab digital",
+                description: "Membuat coding lab yang menarik untuk masa depan karirmu"
               }
             ].map((benefit, index) => (
               <motion.div
@@ -865,15 +846,6 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="https://spmbkedunglo.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-green-400 hover:bg-green-500 text-black font-bold py-4 px-8 rounded-full text-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center gap-2"
-              >
-                <ExternalLink className="w-6 h-6" />
-                Daftar Sekarang
-              </a>
-              <a
                 href="/student/register"
                 className="border-2 border-white text-white hover:bg-white hover:text-gray-900 font-bold py-4 px-8 rounded-full text-xl transition-all duration-300 inline-flex items-center justify-center gap-2"
               >
@@ -912,35 +884,7 @@ export default function Home() {
             {/* Social Media */}
             <div className="text-center">
               <h4 className="text-xl font-bold mb-4">Ikuti Kami</h4>
-              <div className="flex justify-center space-x-4">
-                <a 
-                  href="https://instagram.com/smawahidiyah_official" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Instagram SMA Wahidiyah"
-                  className="w-10 h-10 bg-gray-800 hover:bg-pink-600 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <Instagram className="w-5 h-5" aria-label="Instagram icon" />
-                </a>
-                <a 
-                  href="https://linktr.ee/smawahidiyah" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Linktree SMA Wahidiyah"
-                  className="w-10 h-10 bg-gray-800 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <Users className="w-5 h-5" aria-label="Users icon" />
-                </a>
-                <a 
-                  href="https://spmbkedunglo.com" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="SPMB Kedunglo - Pendaftaran"
-                  className="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <BookOpen className="w-5 h-5" aria-label="Book icon" />
-                </a>
-              </div>
+              <p className="text-gray-400">Segera hadir.</p>
             </div>
 
             {/* Contact */}

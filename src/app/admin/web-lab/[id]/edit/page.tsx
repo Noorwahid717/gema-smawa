@@ -22,6 +22,26 @@ export default function EditWebLabPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [saveStatus, setSaveStatus] = useState<'Unsaved' | 'Saving...' | 'Saved'>('Saved')
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    if (!assignment) return;
+    const { name, value } = e.target;
+    setAssignment({ ...assignment, [name]: value });
+    setSaveStatus('Unsaved');
+  };
+
+  useEffect(() => {
+    if (saveStatus === 'Unsaved') {
+      const handler = setTimeout(() => {
+        handleSubmit(new Event('submit') as unknown as React.FormEvent<HTMLFormElement>);
+      }, 2000);
+
+      return () => {
+        clearTimeout(handler);
+      };
+    }
+  }, [assignment, saveStatus]);
 
   const fetchAssignment = useCallback(async () => {
     try {
@@ -50,6 +70,7 @@ export default function EditWebLabPage() {
 
     try {
       setSaving(true)
+      setSaveStatus('Saving...');
       const formData = new FormData(e.currentTarget)
 
       const updateData = {
@@ -58,6 +79,7 @@ export default function EditWebLabPage() {
         difficulty: formData.get('difficulty'),
         points: parseInt(formData.get('points') as string) || 10,
         classLevel: formData.get('classLevel') || null,
+        template: formData.get('template') || null,
         requirements: formData.get('requirements') ? JSON.parse(formData.get('requirements') as string) : [],
         status: formData.get('status')
       }
@@ -71,15 +93,18 @@ export default function EditWebLabPage() {
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
-          router.push('/admin/web-lab')
+          setSaveStatus('Saved');
         } else {
           setError(result.error || 'Failed to update assignment')
+          setSaveStatus('Unsaved');
         }
       } else {
         setError('Failed to update assignment')
+        setSaveStatus('Unsaved');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update assignment')
+      setSaveStatus('Unsaved');
     } finally {
       setSaving(false)
     }
@@ -173,8 +198,9 @@ export default function EditWebLabPage() {
                   name="title"
                   required
                   defaultValue={assignment.title}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="e.g., Create a Personal Portfolio Website"
+                  placeholder="e.g., Create a Personal Coding Lab Website"
                 />
               </div>
 
@@ -188,6 +214,7 @@ export default function EditWebLabPage() {
                   name="description"
                   rows={4}
                   defaultValue={assignment.description || ''}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="Describe what students need to build..."
                 />
@@ -204,6 +231,7 @@ export default function EditWebLabPage() {
                     name="difficulty"
                     required
                     defaultValue={assignment.difficulty}
+                    onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   >
                     <option value={WebLabDifficulty.BEGINNER}>Beginner</option>
@@ -221,6 +249,7 @@ export default function EditWebLabPage() {
                     name="status"
                     required
                     defaultValue={assignment.status}
+                    onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   >
                     <option value={WebLabStatus.DRAFT}>Draft</option>
@@ -228,6 +257,25 @@ export default function EditWebLabPage() {
                     <option value={WebLabStatus.ARCHIVED}>Archived</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Template */}
+              <div>
+                <label htmlFor="template" className="block text-sm font-medium text-gray-700 mb-2">
+                  Template
+                </label>
+                <select
+                  id="template"
+                  name="template"
+                  defaultValue={assignment.template || ''}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">None</option>
+                  <option value="html-dasar">HTML Dasar</option>
+                  <option value="landing-sederhana">Landing Sederhana</option>
+                  <option value="todo-js">To-do JS</option>
+                </select>
               </div>
 
               {/* Points and Class Level */}
@@ -242,6 +290,7 @@ export default function EditWebLabPage() {
                     name="points"
                     min="0"
                     defaultValue={assignment.points}
+                    onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
@@ -255,6 +304,7 @@ export default function EditWebLabPage() {
                     id="classLevel"
                     name="classLevel"
                     defaultValue={assignment.classLevel || ''}
+                    onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="e.g., X-A, XI-B, XII-C"
                   />
@@ -271,6 +321,7 @@ export default function EditWebLabPage() {
                   name="requirements"
                   rows={6}
                   defaultValue={JSON.stringify(assignment.requirements, null, 2)}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
                   placeholder='["Create an HTML structure", "Add CSS styling", "Make it responsive"]'
                 />
@@ -296,14 +347,17 @@ export default function EditWebLabPage() {
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
-              >
-                <CheckIcon className="w-4 h-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">{saveStatus}</span>
+                <button
+                  type="submit"
+                  disabled={saving || saveStatus === 'Saving...'}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  <CheckIcon className="w-4 h-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
           </form>
         </div>

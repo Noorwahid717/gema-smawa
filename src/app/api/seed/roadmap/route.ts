@@ -261,14 +261,14 @@ const ROADMAP_STAGES_DATA = [
         ]
       },
       {
-        id: "stage-5-portfolio",
-        title: "Portofolio Profesional 💼",
+        id: "stage-5-coding-lab",
+        title: "Coding Lab Profesional 💼",
         description: "Tampilkan profil dan karya terbaik tim.",
         order: 4,
         items: [
-          { id: "stage-5-portfolio-1", label: "Buat halaman profil, skill, proyek, dan kontak.", order: 1 },
-          { id: "stage-5-portfolio-2", label: "Pastikan tampilan responsif di HP dan laptop.", order: 2 },
-          { id: "stage-5-portfolio-3", label: "Deploy gratis ke GitHub Pages atau Netlify.", order: 3 }
+          { id: "stage-5-coding-lab-1", label: "Buat halaman profil, skill, proyek, dan kontak.", order: 1 },
+          { id: "stage-5-coding-lab-2", label: "Pastikan tampilan responsif di HP dan laptop.", order: 2 },
+          { id: "stage-5-coding-lab-3", label: "Deploy gratis ke GitHub Pages atau Netlify.", order: 3 }
         ]
       }
     ]

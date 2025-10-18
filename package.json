@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "prebuild": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
     "deploy": "vercel --prod",
     "deploy-preview": "vercel",
     "prisma:generate": "prisma generate",
@@ -22,7 +24,6 @@
     "vercel:force-deploy": "vercel --prod --force",
     "vercel:build": "npm run prisma:generate && npm run build"
   },
-  
   "dependencies": {
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
@@ -42,19 +43,20 @@
     "next": "15.5.2",
     "next-auth": "^4.24.11",
     "prisma": "^6.16.2",
+    "puppeteer": "^24.25.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "tsx": "^4.20.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.50.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
-    "@playwright/test": "^1.50.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5"

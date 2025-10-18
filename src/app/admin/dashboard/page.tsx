@@ -26,7 +26,7 @@ interface DashboardStats {
   totalActivities: number
   unreadContacts: number
   totalStudents: number
-  totalPortfolioSubmissions: number
+  totalCodingLabSubmissions: number
   totalAssignments: number
   contactsChange: number
   registrationsChange: number
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
     totalActivities: 0,
     unreadContacts: 0,
     totalStudents: 0,
-    totalPortfolioSubmissions: 0,
+    totalCodingLabSubmissions: 0,
     totalAssignments: 0,
     contactsChange: 0,
     registrationsChange: 0,
@@ -120,8 +120,8 @@ export default function AdminDashboard() {
       changeType: 'neutral'
     },
     {
-      title: 'Portfolio Submissions',
-      value: stats.totalPortfolioSubmissions,
+      title: 'Coding Lab Submissions',
+      value: stats.totalCodingLabSubmissions,
       icon: FileText,
       color: 'bg-teal-500',
       change: 'Terkumpul',

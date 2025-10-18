@@ -1,302 +1,290 @@
-import { PrismaClient, CodingDifficulty } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 
-export async function seedCodingLab(prisma: PrismaClient) {
-  // Ensure there is at least one admin for evaluations
-  const admin = await prisma.admin.findFirst({ orderBy: { createdAt: 'asc' } })
+const prisma = new PrismaClient()
 
-  if (!admin) {
-    console.warn('⚠️  Skip coding lab seed: admin data is missing')
-    return
+async function main() {
+  console.log('🌱 Seeding coding lab data...')
+
+  // Create coding lab tasks based on SMA Informatics curriculum
+  const codingLabTasks = [
+    // Kelas X - Dasar Pemrograman & Algoritma
+    {
+      title: 'Algoritma Dasar',
+      description: 'Pelajari konsep dasar algoritma dan flowchart dalam pemrograman. Buat algoritma untuk menyelesaikan masalah sehari-hari.',
+      classLevel: 'X',
+      tags: 'algoritma,flowchart,logika',
+      instructions: 'Buat algoritma dan flowchart untuk menghitung nilai rata-rata siswa, mengkonversi suhu, dan menentukan bilangan prima.',
+      createdAt: new Date('2024-01-15T00:00:00Z')
+    },
+    {
+      title: 'Pengenalan Python',
+      description: 'Belajar dasar-dasar bahasa pemrograman Python untuk siswa SMA kelas X.',
+      classLevel: 'X',
+      tags: 'python,dasar,variabel',
+      instructions: 'Pelajari cara mendeklarasikan variabel, tipe data, input/output, dan operasi matematika dasar dalam Python.',
+      createdAt: new Date('2024-01-20T00:00:00Z')
+    },
+    {
+      title: 'Struktur Kontrol - Percabangan',
+      description: 'Pelajari konsep percabangan (if-else) dalam pemrograman untuk membuat keputusan.',
+      classLevel: 'X',
+      tags: 'percabangan,if-else,logika',
+      instructions: 'Buat program untuk menentukan grade nilai siswa, menghitung diskon belanja, dan mengecek tahun kabisat.',
+      createdAt: new Date('2024-02-01T00:00:00Z')
+    },
+    {
+      title: 'Struktur Kontrol - Perulangan',
+      description: 'Pelajari konsep perulangan (loop) untuk mengulang proses dalam pemrograman.',
+      classLevel: 'X',
+      tags: 'perulangan,loop,for,while',
+      instructions: 'Buat program untuk menghitung faktorial, mencetak pola bintang, dan menghitung jumlah deret bilangan.',
+      createdAt: new Date('2024-02-15T00:00:00Z')
+    },
+
+    // Kelas XI - Struktur Data & Algoritma Lanjutan
+    {
+      title: 'Array dan List',
+      description: 'Pelajari struktur data array untuk menyimpan kumpulan data dalam pemrograman.',
+      classLevel: 'XI',
+      tags: 'array,list,struktur-data',
+      instructions: 'Buat program untuk mengelola data siswa menggunakan array, mencari nilai maksimum/minimum, dan mengurutkan data.',
+      createdAt: new Date('2024-03-01T00:00:00Z')
+    },
+    {
+      title: 'Stack dan Queue',
+      description: 'Pelajari struktur data Stack dan Queue untuk implementasi LIFO dan FIFO.',
+      classLevel: 'XI',
+      tags: 'stack,queue,struktur-data',
+      instructions: 'Implementasikan Stack untuk undo/redo functionality dan Queue untuk sistem antrian sederhana.',
+      createdAt: new Date('2024-03-15T00:00:00Z')
+    },
+    {
+      title: 'Linked List',
+      description: 'Pelajari struktur data Linked List untuk penyimpanan data yang dinamis.',
+      classLevel: 'XI',
+      tags: 'linked-list,struktur-data,dinamis',
+      instructions: 'Buat implementasi Linked List untuk mengelola data mahasiswa dengan operasi insert, delete, dan search.',
+      createdAt: new Date('2024-04-01T00:00:00Z')
+    },
+    {
+      title: 'Tree dan Binary Tree',
+      description: 'Pelajari struktur data hierarkis Tree dan implementasi Binary Tree.',
+      classLevel: 'XI',
+      tags: 'tree,binary-tree,hierarki',
+      instructions: 'Implementasikan Binary Tree untuk struktur organisasi sekolah dan operasi traversal (inorder, preorder, postorder).',
+      createdAt: new Date('2024-04-15T00:00:00Z')
+    },
+
+    // Kelas XII - Algoritma Lanjutan & Pemrograman Kompleks
+    {
+      title: 'Algoritma Sorting',
+      description: 'Pelajari berbagai algoritma pengurutan dan analisis kompleksitasnya.',
+      classLevel: 'XII',
+      tags: 'sorting,algoritma,kompleksitas',
+      instructions: 'Implementasikan dan bandingkan Bubble Sort, Selection Sort, Insertion Sort, dan Quick Sort dengan analisis waktu eksekusi.',
+      createdAt: new Date('2024-05-01T00:00:00Z')
+    },
+    {
+      title: 'Algoritma Searching',
+      description: 'Pelajari algoritma pencarian efisien untuk berbagai struktur data.',
+      classLevel: 'XII',
+      tags: 'searching,algoritma,efisiensi',
+      instructions: 'Implementasikan Linear Search, Binary Search, dan algoritma pencarian pada tree dengan analisis kompleksitas.',
+      createdAt: new Date('2024-05-15T00:00:00Z')
+    },
+    {
+      title: 'Algoritma Greedy',
+      description: 'Pelajari algoritma Greedy untuk pemecahan masalah optimasi.',
+      classLevel: 'XII',
+      tags: 'greedy,optimasi,algoritma',
+      instructions: 'Implementasikan algoritma Greedy untuk masalah knapsack, coin change, dan scheduling problems.',
+      createdAt: new Date('2024-06-01T00:00:00Z')
+    },
+    {
+      title: 'Dynamic Programming',
+      description: 'Pelajari teknik Dynamic Programming untuk masalah kompleks.',
+      classLevel: 'XII',
+      tags: 'dynamic-programming,optimasi,memoization',
+      instructions: 'Implementasikan Fibonacci dengan memoization, Longest Common Subsequence, dan 0/1 Knapsack problem.',
+      createdAt: new Date('2024-06-15T00:00:00Z')
+    }
+  ]
+
+  console.log('📚 Creating coding lab tasks...')
+  for (const task of codingLabTasks) {
+    await prisma.codingLabTask.upsert({
+      where: {
+        title_classLevel: {
+          title: task.title,
+          classLevel: task.classLevel
+        }
+      },
+      update: task,
+      create: task
+    })
   }
 
-  console.log('🌱 Seeding coding labs...')
+  // Create sample student submissions for demonstration
+  const students = await prisma.student.findMany({ take: 3 })
+  const tasks = await prisma.codingLabTask.findMany()
 
-  // Create coding labs
-  const basicLab = await prisma.codingLab.upsert({
-    where: { id: 'basic-algorithms-lab' },
-    update: {},
-    create: {
-      id: 'basic-algorithms-lab',
-      title: 'Basic Algorithms',
-      description: 'Pelajari konsep fundamental programming dan algoritma dasar. Cocok untuk pemula yang baru belajar programming.',
-      difficulty: CodingDifficulty.BEGINNER,
-      language: 'JavaScript',
-      points: 100,
-      duration: 60,
-      isActive: true
+  if (students.length > 0 && tasks.length > 0) {
+    console.log('📝 Creating sample student submissions...')
+
+    const sampleSubmissions = [
+      {
+        taskId: tasks[0].id, // Algoritma Dasar
+        studentId: students[0].id,
+        title: 'Algoritma Penghitung Rata-rata',
+        summary: 'Algoritma untuk menghitung nilai rata-rata siswa dengan flowchart lengkap',
+        classLevel: 'X',
+        tags: 'algoritma,flowchart,matematika',
+        status: 'GRADED' as const,
+        submittedAt: new Date('2024-02-10T10:00:00Z')
+      },
+      {
+        taskId: tasks[1].id, // Python Dasar
+        studentId: students[1].id,
+        title: 'Program Kalkulator Sederhana Python',
+        summary: 'Program Python untuk operasi matematika dasar dengan input dari user',
+        classLevel: 'X',
+        tags: 'python,kalkulator,matematika',
+        status: 'SUBMITTED' as const,
+        submittedAt: new Date('2024-02-12T14:30:00Z')
+      },
+      {
+        taskId: tasks[4].id, // Stack dan Queue
+        studentId: students[2].id,
+        title: 'Implementasi Stack untuk Undo/Redo',
+        summary: 'Program untuk mengimplementasikan struktur data Stack dalam simulasi text editor dengan fitur undo/redo',
+        classLevel: 'XI',
+        tags: 'stack,lifo,undo-redo'
+      },
+      {
+        taskId: tasks[8].id, // Algoritma Sorting
+        studentId: students[0].id,
+        title: 'Perbandingan Algoritma Sorting',
+        summary: 'Implementasi dan analisis performa Bubble Sort, Selection Sort, dan Quick Sort',
+        classLevel: 'XII',
+        tags: 'sorting,algoritma,kompleksitas',
+        status: 'SUBMITTED' as const,
+        submittedAt: new Date('2024-05-20T09:15:00Z')
+      }
+    ]
+
+    for (const submission of sampleSubmissions) {
+      const existing = await prisma.codingLabSubmission.findFirst({
+        where: {
+          taskId: submission.taskId,
+          studentId: submission.studentId
+        }
+      })
+
+      if (!existing) {
+        await prisma.codingLabSubmission.create({
+          data: submission
+        })
+      }
     }
-  })
 
-  const dataStructuresLab = await prisma.codingLab.upsert({
-    where: { id: 'data-structures-lab' },
-    update: {},
-    create: {
-      id: 'data-structures-lab',
-      title: 'Data Structures',
-      description: 'Kuasai struktur data fundamental seperti array, linked list, stack, dan queue.',
-      difficulty: CodingDifficulty.INTERMEDIATE,
-      language: 'Python',
-      points: 150,
-      duration: 90,
-      isActive: true
+    // Create sample evaluations for graded submissions
+    const gradedSubmission = await prisma.codingLabSubmission.findFirst({
+      where: { status: 'GRADED' },
+      include: { versions: true }
+    })
+
+    if (gradedSubmission && gradedSubmission.versions.length > 0) {
+      console.log('📊 Creating sample evaluation...')
+
+      const admin = await prisma.admin.findFirst()
+      if (admin) {
+        // Create evaluation
+        const evaluation = await prisma.codingLabEvaluation.upsert({
+          where: {
+            id: `${gradedSubmission.id}-${gradedSubmission.versions[0].id}` // Create a composite key
+          },
+          update: {
+            overallScore: 92,
+            overallNote: 'Sangat baik! Algoritma sudah benar dan flowchart jelas. Perhatikan dokumentasi yang lebih detail.',
+            status: 'GRADED',
+            createdAt: new Date('2024-02-15T09:00:00Z')
+          },
+          create: {
+            submissionId: gradedSubmission.id,
+            versionId: gradedSubmission.versions[0].id,
+            reviewerId: admin.id,
+            overallScore: 92,
+            overallNote: 'Sangat baik! Algoritma sudah benar dan flowchart jelas. Perhatikan dokumentasi yang lebih detail.',
+            status: 'GRADED',
+            createdAt: new Date('2024-02-15T09:00:00Z')
+          }
+        })
+
+        // Create rubric scores
+        const rubricScores = [
+          {
+            evaluationId: evaluation.id,
+            criterion: 'HTML_STRUCTURE' as const,
+            score: 20,
+            maxScore: 25,
+            comment: 'Struktur algoritma sudah baik'
+          },
+          {
+            evaluationId: evaluation.id,
+            criterion: 'CSS_RESPONSIVE' as const,
+            score: 23,
+            maxScore: 25,
+            comment: 'Flowchart sangat jelas dan mudah dipahami'
+          },
+          {
+            evaluationId: evaluation.id,
+            criterion: 'JS_INTERACTIVITY' as const,
+            score: 22,
+            maxScore: 25,
+            comment: 'Logika pemrograman sudah tepat'
+          },
+          {
+            evaluationId: evaluation.id,
+            criterion: 'CODE_QUALITY' as const,
+            score: 15,
+            maxScore: 15,
+            comment: 'Kode rapi dan terdokumentasi dengan baik'
+          },
+          {
+            evaluationId: evaluation.id,
+            criterion: 'CREATIVITY_BRIEF' as const,
+            score: 12,
+            maxScore: 10,
+            comment: 'Ada inovasi dalam penyelesaian masalah'
+          }
+        ]
+
+        for (const score of rubricScores) {
+          await prisma.codingLabRubricScore.upsert({
+            where: {
+              evaluationId_criterion: {
+                evaluationId: score.evaluationId,
+                criterion: score.criterion
+              }
+            },
+            update: score,
+            create: score
+          })
+        }
+      }
     }
-  })
-
-  console.log('📚 Creating coding exercises...')
-
-  // Basic Algorithms Exercises
-  const sumArrayExercise = await prisma.codingExercise.upsert({
-    where: { id: 'sum-array-exercise' },
-    update: {},
-    create: {
-      id: 'sum-array-exercise',
-      labId: basicLab.id,
-      title: 'Sum Array Elements',
-      description: 'Write a function that returns the sum of all elements in an array.',
-      difficulty: CodingDifficulty.BEGINNER,
-      points: 10,
-      timeLimit: 30,
-      memoryLimit: 256,
-      instructions: `Buat fungsi yang menerima array angka dan mengembalikan jumlah semua elemen dalam array.
-
-**Contoh:**
-- Input: [1, 2, 3, 4, 5]
-- Output: 15
-
-**Catatan:**
-- Array akan selalu berisi angka positif
-- Array tidak akan kosong`,
-      starterCode: `function sumArray(arr) {
-  // Tulis kode Anda di sini
-
-}`,
-      solutionCode: `function sumArray(arr) {
-  let sum = 0;
-  for (let i = 0; i < arr.length; i++) {
-    sum += arr[i];
   }
-  return sum;
-}`,
-      hints: JSON.stringify([
-        'Gunakan loop untuk mengiterasi setiap elemen array',
-        'Inisialisasi variabel sum dengan 0',
-        'Tambahkan setiap elemen ke variabel sum'
-      ]),
-      tags: JSON.stringify(['array', 'loop', 'sum', 'beginner']),
-      isActive: true
-    }
-  })
 
-  const findMaxExercise = await prisma.codingExercise.upsert({
-    where: { id: 'find-max-exercise' },
-    update: {},
-    create: {
-      id: 'find-max-exercise',
-      labId: basicLab.id,
-      title: 'Find Maximum Value',
-      description: 'Write a function that finds the maximum value in an array.',
-      difficulty: CodingDifficulty.BEGINNER,
-      points: 15,
-      timeLimit: 30,
-      memoryLimit: 256,
-      instructions: `Buat fungsi yang menerima array angka dan mengembalikan nilai maksimum dalam array.
-
-**Contoh:**
-- Input: [3, 7, 2, 9, 5]
-- Output: 9
-
-**Catatan:**
-- Array akan selalu berisi setidaknya satu angka
-- Angka bisa positif atau negatif`,
-      starterCode: `function findMax(arr) {
-  // Tulis kode Anda di sini
-
-}`,
-      solutionCode: `function findMax(arr) {
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) {
-      max = arr[i];
-    }
-  }
-  return max;
-}`,
-      hints: JSON.stringify([
-        'Inisialisasi max dengan elemen pertama array',
-        'Iterasi dari indeks 1 sampai akhir array',
-        'Bandingkan setiap elemen dengan nilai max saat ini'
-      ]),
-      tags: JSON.stringify(['array', 'loop', 'maximum', 'comparison']),
-      isActive: true
-    }
-  })
-
-  // Data Structures Exercises
-  const stackExercise = await prisma.codingExercise.upsert({
-    where: { id: 'stack-implementation' },
-    update: {},
-    create: {
-      id: 'stack-implementation',
-      labId: dataStructuresLab.id,
-      title: 'Stack Implementation',
-      description: 'Implement a stack data structure with push, pop, and peek operations.',
-      difficulty: CodingDifficulty.INTERMEDIATE,
-      points: 25,
-      timeLimit: 45,
-      memoryLimit: 256,
-      instructions: `Implementasikan struktur data Stack dengan operasi berikut:
-- push(item): menambah item ke stack
-- pop(): menghapus dan mengembalikan item teratas
-- peek(): melihat item teratas tanpa menghapus
-- isEmpty(): cek apakah stack kosong
-
-**Contoh penggunaan:**
-\`\`\`python
-stack = Stack()
-stack.push(1)
-stack.push(2)
-print(stack.peek())  # Output: 2
-print(stack.pop())   # Output: 2
-print(stack.pop())   # Output: 1
-\`\`\``,
-      starterCode: `class Stack:
-    def __init__(self):
-        # Inisialisasi stack
-        pass
-
-    def push(self, item):
-        # Tambah item ke stack
-        pass
-
-    def pop(self):
-        # Hapus dan kembalikan item teratas
-        pass
-
-    def peek(self):
-        # Lihat item teratas tanpa menghapus
-        pass
-
-    def isEmpty(self):
-        # Cek apakah stack kosong
-        pass`,
-      solutionCode: `class Stack:
-    def __init__(self):
-        self.items = []
-
-    def push(self, item):
-        self.items.append(item)
-
-    def pop(self):
-        if not self.isEmpty():
-            return self.items.pop()
-        return None
-
-    def peek(self):
-        if not self.isEmpty():
-            return self.items[-1]
-        return None
-
-    def isEmpty(self):
-        return len(self.items) == 0`,
-      hints: JSON.stringify([
-        'Gunakan list sebagai penyimpanan internal',
-        'push: tambah ke akhir list',
-        'pop: hapus dari akhir list',
-        'peek: lihat elemen terakhir list'
-      ]),
-      tags: JSON.stringify(['stack', 'data-structure', 'list', 'intermediate']),
-      isActive: true
-    }
-  })
-
-  console.log('🧪 Creating test cases...')
-
-  // Test cases for Sum Array
-  await prisma.codingTestCase.createMany({
-    data: [
-      {
-        exerciseId: sumArrayExercise.id,
-        input: '[1, 2, 3, 4, 5]',
-        expectedOutput: '15',
-        isHidden: false,
-        explanation: 'Jumlah semua elemen: 1+2+3+4+5 = 15'
-      },
-      {
-        exerciseId: sumArrayExercise.id,
-        input: '[10, 20, 30]',
-        expectedOutput: '60',
-        isHidden: false,
-        explanation: 'Jumlah: 10+20+30 = 60'
-      },
-      {
-        exerciseId: sumArrayExercise.id,
-        input: '[7]',
-        expectedOutput: '7',
-        isHidden: true,
-        explanation: 'Array dengan satu elemen'
-      }
-    ],
-    skipDuplicates: true
-  })
-
-  // Test cases for Find Max
-  await prisma.codingTestCase.createMany({
-    data: [
-      {
-        exerciseId: findMaxExercise.id,
-        input: '[3, 7, 2, 9, 5]',
-        expectedOutput: '9',
-        isHidden: false,
-        explanation: 'Nilai maksimum adalah 9'
-      },
-      {
-        exerciseId: findMaxExercise.id,
-        input: '[-1, -5, -3]',
-        expectedOutput: '-1',
-        isHidden: false,
-        explanation: 'Dalam array negatif, -1 adalah yang terbesar'
-      },
-      {
-        exerciseId: findMaxExercise.id,
-        input: '[42]',
-        expectedOutput: '42',
-        isHidden: true,
-        explanation: 'Array dengan satu elemen'
-      }
-    ],
-    skipDuplicates: true
-  })
-
-  // Test cases for Stack
-  await prisma.codingTestCase.createMany({
-    data: [
-      {
-        exerciseId: stackExercise.id,
-        input: 'push(1), push(2), peek()',
-        expectedOutput: '2',
-        isHidden: false,
-        explanation: 'Peek setelah push 1 dan 2 harus mengembalikan 2'
-      },
-      {
-        exerciseId: stackExercise.id,
-        input: 'push(5), pop()',
-        expectedOutput: '5',
-        isHidden: false,
-        explanation: 'Pop setelah push 5 harus mengembalikan 5'
-      },
-      {
-        exerciseId: stackExercise.id,
-        input: 'isEmpty()',
-        expectedOutput: 'True',
-        isHidden: true,
-        explanation: 'Stack kosong harus mengembalikan True untuk isEmpty'
-      }
-    ],
-    skipDuplicates: true
-  })
-
-  console.log('✅ Coding lab seeding completed!')
-  console.log(`📊 Created ${await prisma.codingLab.count()} labs`)
-  console.log(`📝 Created ${await prisma.codingExercise.count()} exercises`)
-  console.log(`🧪 Created ${await prisma.codingTestCase.count()} test cases`)
+  console.log('✅ Coding lab seed data completed!')
+  console.log(`📚 Created ${codingLabTasks.length} coding lab tasks`)
+  console.log('📝 Created sample student submissions with evaluations')
 }
+
+main()
+  .catch((e) => {
+    console.error('❌ Error seeding coding lab data:', e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
