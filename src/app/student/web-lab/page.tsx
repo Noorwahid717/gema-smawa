@@ -15,7 +15,8 @@ import {
   Target,
   Calendar,
   Award,
-  TrendingUp
+  TrendingUp,
+  MessageSquare
 } from 'lucide-react'
 
 interface Assignment {
@@ -104,24 +105,24 @@ export default function StudentWebLabPage() {
     }
 
     const statusConfig = {
-      submitted: {
+      SUBMITTED: {
         color: 'bg-blue-100 text-blue-800',
         icon: Clock,
         text: 'Dikirim'
       },
-      graded: {
+      GRADED: {
         color: 'bg-green-100 text-green-800',
         icon: CheckCircle,
         text: 'Dinilai'
       },
-      late: {
+      RETURNED: {
         color: 'bg-orange-100 text-orange-800',
         icon: AlertCircle,
-        text: 'Terlambat'
+        text: 'Dikembalikan'
       }
     }
 
-    const config = statusConfig[submission.status as keyof typeof statusConfig] || statusConfig.submitted
+    const config = statusConfig[submission.status as keyof typeof statusConfig] || statusConfig.SUBMITTED
     const Icon = config.icon
 
     return (
@@ -206,7 +207,7 @@ export default function StudentWebLabPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Selesai</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {assignments.filter(a => a.submissions?.[0]?.status === 'graded').length}
+                    {assignments.filter(a => a.submissions?.[0]?.status === 'GRADED').length}
                   </p>
                 </div>
               </div>
@@ -220,7 +221,7 @@ export default function StudentWebLabPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Dalam Proses</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {assignments.filter(a => a.submissions?.[0]?.status === 'submitted').length}
+                    {assignments.filter(a => a.submissions?.[0]?.status === 'SUBMITTED').length}
                   </p>
                 </div>
               </div>
@@ -297,6 +298,24 @@ export default function StudentWebLabPage() {
                             </li>
                           )}
                         </ul>
+                      </div>
+                    )}
+
+                    {/* Feedback Section */}
+                    {hasSubmission && hasSubmission.status === 'GRADED' && hasSubmission.feedback && (
+                      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-start">
+                          <MessageSquare className="w-4 h-4 text-green-600 mt-0.5 mr-2 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs font-medium text-green-800 mb-1">Feedback dari Guru:</p>
+                            <p className="text-sm text-green-700">{hasSubmission.feedback}</p>
+                            {hasSubmission.grade !== undefined && (
+                              <p className="text-xs text-green-600 mt-1 font-medium">
+                                Nilai: {hasSubmission.grade}/100
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
 

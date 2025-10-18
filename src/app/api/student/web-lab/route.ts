@@ -37,7 +37,9 @@ export async function GET(request: NextRequest) {
             id: true,
             status: true,
             score: true,
-            submittedAt: true
+            feedback: true,
+            submittedAt: true,
+            gradedAt: true
           }
         },
         _count: {

@@ -506,6 +506,432 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(section);
     });
 });`
+  },
+  {
+    id: 'gallery-modal',
+    name: 'Galeri Foto dengan Modal',
+    description: 'Template galeri foto interaktif dengan modal popup untuk pemula menengah',
+    category: 'intermediate',
+    difficulty: 'ADVANCED',
+    html: `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeri Foto Interaktif</title>
+</head>
+<body>
+    <div class="gallery-container">
+        <header class="gallery-header">
+            <h1>Galeri Foto SMA Wahidiyah</h1>
+            <p>Klik foto untuk melihat versi besar</p>
+        </header>
+
+        <div id="gallery" class="gallery-grid">
+            <!-- Foto akan ditambahkan oleh JavaScript -->
+        </div>
+    </div>
+
+    <!-- Modal untuk foto besar -->
+    <div id="modal" class="modal">
+        <span class="close" id="closeModal">&times;</span>
+        <img class="modal-content" id="modalImage" alt="Foto besar">
+        <div class="caption" id="caption"></div>
+        <button id="prevBtn" class="nav-btn">&lt;</button>
+        <button id="nextBtn" class="nav-btn">&gt;</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>`,
+    css: `/* Reset dan Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #f8f9fa;
+}
+
+/* Gallery Container */
+.gallery-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.gallery-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 40px 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+}
+
+.gallery-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.gallery-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* Gallery Grid */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.gallery-item {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.gallery-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 80%;
+    max-height: 80%;
+    border-radius: 10px;
+    box-shadow: 0 0 50px rgba(0,0,0,0.5);
+    animation: zoomIn 0.3s ease;
+}
+
+@keyframes zoomIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.close {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close:hover {
+    color: #bbb;
+}
+
+.caption {
+    margin: 20px auto;
+    width: 80%;
+    text-align: center;
+    color: #ccc;
+    font-size: 18px;
+    padding: 10px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 5px;
+}
+
+.nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.3);
+    color: white;
+    border: none;
+    padding: 15px 20px;
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.nav-btn:hover {
+    background: rgba(255,255,255,0.5);
+    transform: translateY(-50%) scale(1.1);
+}
+
+#prevBtn {
+    left: 20px;
+}
+
+#nextBtn {
+    right: 20px;
+}
+
+/* Loading placeholder */
+.loading {
+    background: #ecf0f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+    }
+
+    .gallery-header h1 {
+        font-size: 2rem;
+    }
+
+    .modal-content {
+        max-width: 90%;
+        max-height: 70%;
+    }
+
+    .nav-btn {
+        padding: 12px 16px;
+        font-size: 20px;
+    }
+
+    #prevBtn {
+        left: 10px;
+    }
+
+    #nextBtn {
+        right: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .gallery-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-btn {
+        display: none; /* Hide navigation buttons on very small screens */
+    }
+}`,
+    js: `// Galeri Foto Interaktif - SMA Wahidiyah
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Galeri Foto Interaktif - SMA Wahidiyah');
+
+    // Data foto (dalam production, ini akan dari API/database)
+    const photos = [
+        {
+            src: 'https://picsum.photos/400/300?random=1',
+            alt: 'Foto 1 - SMA Wahidiyah',
+            caption: 'Kegiatan Belajar Mengajar'
+        },
+        {
+            src: 'https://picsum.photos/400/300?random=2',
+            alt: 'Foto 2 - SMA Wahidiyah',
+            caption: 'Praktikum Laboratorium'
+        },
+        {
+            src: 'https://picsum.photos/400/300?random=3',
+            alt: 'Foto 3 - SMA Wahidiyah',
+            caption: 'Kegiatan Ekstrakurikuler'
+        },
+        {
+            src: 'https://picsum.photos/400/300?random=4',
+            alt: 'Foto 4 - SMA Wahidiyah',
+            caption: 'Acara Sekolah'
+        },
+        {
+            src: 'https://picsum.photos/400/300?random=5',
+            alt: 'Foto 5 - SMA Wahidiyah',
+            caption: 'Sarana dan Prasarana'
+        },
+        {
+            src: 'https://picsum.photos/400/300?random=6',
+            alt: 'Foto 6 - SMA Wahidiyah',
+            caption: 'Kegiatan Sosial'
+        }
+    ];
+
+    let currentIndex = 0;
+    const gallery = document.getElementById('gallery');
+    const modal = document.getElementById('modal');
+    const modalImage = document.getElementById('modalImage');
+    const caption = document.getElementById('caption');
+    const closeModal = document.getElementById('closeModal');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    // Fungsi untuk membuat galeri
+    function createGallery() {
+        photos.forEach((photo, index) => {
+            const item = document.createElement('div');
+            item.className = 'gallery-item';
+
+            const img = document.createElement('img');
+            img.src = photo.src;
+            img.alt = photo.alt;
+            img.loading = 'lazy'; // Lazy loading untuk performa
+
+            // Tambahkan loading state
+            img.onload = function() {
+                item.classList.remove('loading');
+            };
+
+            img.onerror = function() {
+                item.innerHTML = '<div class="loading">Gagal memuat gambar</div>';
+            };
+
+            // Event listener untuk membuka modal
+            item.addEventListener('click', () => openModal(index));
+
+            item.appendChild(img);
+            gallery.appendChild(item);
+        });
+    }
+
+    // Fungsi untuk membuka modal
+    function openModal(index) {
+        currentIndex = index;
+        const photo = photos[currentIndex];
+
+        modalImage.src = photo.src;
+        modalImage.alt = photo.alt;
+        caption.textContent = photo.caption;
+
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+
+        // Update navigation buttons
+        updateNavigationButtons();
+    }
+
+    // Fungsi untuk menutup modal
+    function closeModalFunc() {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Restore scrolling
+    }
+
+    // Fungsi untuk navigasi
+    function navigatePhoto(direction) {
+        currentIndex += direction;
+
+        if (currentIndex < 0) {
+            currentIndex = photos.length - 1;
+        } else if (currentIndex >= photos.length) {
+            currentIndex = 0;
+        }
+
+        const photo = photos[currentIndex];
+        modalImage.src = photo.src;
+        modalImage.alt = photo.alt;
+        caption.textContent = photo.caption;
+
+        updateNavigationButtons();
+    }
+
+    // Fungsi untuk update tombol navigasi
+    function updateNavigationButtons() {
+        // Bisa ditambahkan logika untuk disable tombol jika hanya 1 foto
+        // Untuk sekarang, tombol selalu aktif karena ada banyak foto
+    }
+
+    // Event listeners
+    closeModal.addEventListener('click', closeModalFunc);
+    prevBtn.addEventListener('click', () => navigatePhoto(-1));
+    nextBtn.addEventListener('click', () => navigatePhoto(1));
+
+    // Klik di luar modal untuk menutup
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModalFunc();
+        }
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (modal.style.display === 'block') {
+            switch(e.key) {
+                case 'Escape':
+                    closeModalFunc();
+                    break;
+                case 'ArrowLeft':
+                    navigatePhoto(-1);
+                    break;
+                case 'ArrowRight':
+                    navigatePhoto(1);
+                    break;
+            }
+        }
+    });
+
+    // Touch/swipe support untuk mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    modal.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+
+    modal.addEventListener('touchend', function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    });
+
+    function handleSwipe() {
+        const swipeThreshold = 50;
+        const swipeDistance = touchStartX - touchEndX;
+
+        if (Math.abs(swipeDistance) > swipeThreshold) {
+            if (swipeDistance > 0) {
+                // Swipe left - next photo
+                navigatePhoto(1);
+            } else {
+                // Swipe right - previous photo
+                navigatePhoto(-1);
+            }
+        }
+    }
+
+    // Initialize gallery
+    createGallery();
+
+    // Log untuk debugging
+    console.log(\`Galeri dengan \${photos.length} foto berhasil dimuat\`);
+});`
   }
 ];
 
