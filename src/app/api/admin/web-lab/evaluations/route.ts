@@ -6,20 +6,42 @@ import { WebLabSubmissionStatus } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔄 Starting evaluation creation...')
+    
     const session = await getServerSession(authOptions)
+    console.log('Session user:', session?.user)
+    
     if (!session?.user?.id) {
+      console.log('❌ No session user ID')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const { submissionId, score, feedback, checklist } = body
+    
+    console.log('Request body:', { submissionId, score, feedback: feedback?.substring(0, 50) })
 
-    if (!submissionId || score === undefined) {
+    if (!submissionId || score === undefined || score === null || score === '') {
+      console.log('❌ Missing required fields - submissionId:', !!submissionId, 'score:', score, 'type:', typeof score)
       return NextResponse.json(
         { error: 'Submission ID and score are required' },
         { status: 400 }
       )
     }
+
+    // Verify admin exists
+    const admin = await prisma.admin.findUnique({
+      where: { id: session.user.id }
+    })
+    
+    console.log('Admin lookup result:', admin ? { id: admin.id, name: admin.name } : 'NOT FOUND')
+    
+    if (!admin) {
+      console.log('❌ Admin not found for session user ID:', session.user.id)
+      return NextResponse.json({ error: 'Admin not found' }, { status: 403 })
+    }
+
+    console.log('✅ Admin verified, proceeding with evaluation...')
 
     // Update submission status and score
     const submission = await prisma.webLabSubmission.update({
@@ -53,6 +75,8 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    console.log('✅ Evaluation created/updated successfully:', evaluation)
 
     return NextResponse.json({
       success: true,
