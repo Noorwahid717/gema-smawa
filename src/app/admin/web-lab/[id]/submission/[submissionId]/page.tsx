@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { WebLabSubmission, WebLabSubmissionStatus } from '@prisma/client'
-import { ArrowLeftIcon, CheckCircleIcon, EyeIcon, CodeBracketIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, EyeIcon, CodeBracketIcon } from '@heroicons/react/24/outline'
 
 interface SubmissionWithDetails extends WebLabSubmission {
   student: {
@@ -39,6 +39,30 @@ export default function AdminWebLabSubmissionPage() {
   const [score, setScore] = useState<number>(0)
   const [feedback, setFeedback] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview')
+  const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false)
+
+  const generatePreviewHtml = useCallback(() => {
+    if (!submission) return ''
+
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Web Lab Submission Preview</title>
+        <style>
+          ${submission.css || ''}
+        </style>
+      </head>
+      <body>
+        ${submission.html || ''}
+        <script>
+          ${submission.js || ''}
+        </script>
+      </body>
+    </html>`
+  }, [submission])
 
   const fetchSubmission = useCallback(async () => {
     try {
@@ -88,6 +112,25 @@ export default function AdminWebLabSubmissionPage() {
       setSaving(false)
     }
   }
+
+  // Handle escape key for fullscreen
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isPreviewFullscreen) {
+        setIsPreviewFullscreen(false)
+      }
+    }
+
+    if (isPreviewFullscreen) {
+      document.addEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'hidden'
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'unset'
+    }
+  }, [isPreviewFullscreen])
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -214,12 +257,38 @@ export default function AdminWebLabSubmissionPage() {
 
               <div className="p-6">
                 {activeTab === 'preview' ? (
-                  <div className="border rounded-lg p-4 bg-gray-50">
-                    <iframe
-                      srcDoc={submission.html || ''}
-                      className="w-full h-96 border-0 rounded"
-                      title="Submission Preview"
-                    />
+                  <div className="space-y-4">
+                    {/* Preview Controls */}
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium text-gray-900">Live Preview</h3>
+                      <button
+                        onClick={() => setIsPreviewFullscreen(!isPreviewFullscreen)}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <EyeIcon className="w-4 h-4 mr-2" />
+                        {isPreviewFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                      </button>
+                    </div>
+
+                    {/* Preview Container */}
+                    <div className={`border rounded-lg bg-white overflow-hidden transition-all duration-300 ${
+                      isPreviewFullscreen ? 'fixed inset-4 z-50 bg-white' : 'h-96'
+                    }`}>
+                      <iframe
+                        srcDoc={generatePreviewHtml()}
+                        className="w-full h-full border-0"
+                        title="Submission Preview"
+                        sandbox="allow-scripts allow-same-origin"
+                      />
+                      {isPreviewFullscreen && (
+                        <button
+                          onClick={() => setIsPreviewFullscreen(false)}
+                          className="absolute top-4 right-4 bg-gray-800 text-white px-3 py-2 rounded-md text-sm hover:bg-gray-700"
+                        >
+                          Close
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
