@@ -357,7 +357,8 @@ document.addEventListener('DOMContentLoaded', createGallery);`,
       ]),
       points: 200,
       timeLimit: 120,
-      status: WebLabStatus.PUBLISHED
+      status: WebLabStatus.PUBLISHED,
+      template: 'gallery-modal',
     }
   ]
 

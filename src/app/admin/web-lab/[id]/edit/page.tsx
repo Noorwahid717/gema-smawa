@@ -31,18 +31,6 @@ export default function EditWebLabPage() {
     setSaveStatus('Unsaved');
   };
 
-  useEffect(() => {
-    if (saveStatus === 'Unsaved') {
-      const handler = setTimeout(() => {
-        handleSubmit(new Event('submit') as unknown as React.FormEvent<HTMLFormElement>);
-      }, 2000);
-
-      return () => {
-        clearTimeout(handler);
-      };
-    }
-  }, [assignment, saveStatus]);
-
   const fetchAssignment = useCallback(async () => {
     try {
       setLoading(true)
@@ -64,7 +52,7 @@ export default function EditWebLabPage() {
     }
   }, [assignmentId])
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!assignment) return
 
@@ -76,6 +64,7 @@ export default function EditWebLabPage() {
       const updateData = {
         title: formData.get('title'),
         description: formData.get('description'),
+        instructions: formData.get('instructions'),
         difficulty: formData.get('difficulty'),
         points: parseInt(formData.get('points') as string) || 10,
         classLevel: formData.get('classLevel') || null,
@@ -85,7 +74,7 @@ export default function EditWebLabPage() {
       }
 
       const response = await fetch(`/api/admin/web-lab/${assignmentId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
       })
@@ -108,7 +97,24 @@ export default function EditWebLabPage() {
     } finally {
       setSaving(false)
     }
-  }
+  }, [assignment, assignmentId])
+
+  useEffect(() => {
+    if (saveStatus === 'Unsaved') {
+      const handler = setTimeout(() => {
+        // We can't call handleSubmit directly here as it requires a form event
+        // Instead, we'll trigger a form submit programmatically
+        const form = document.querySelector('form');
+        if (form) {
+          form.requestSubmit();
+        }
+      }, 2000);
+
+      return () => {
+        clearTimeout(handler);
+      };
+    }
+  }, [saveStatus]);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -217,6 +223,23 @@ export default function EditWebLabPage() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="Describe what students need to build..."
+                />
+              </div>
+
+              {/* Instructions */}
+              <div>
+                <label htmlFor="instructions" className="block text-sm font-medium text-gray-700 mb-2">
+                  Instructions *
+                </label>
+                <textarea
+                  id="instructions"
+                  name="instructions"
+                  rows={6}
+                  required
+                  defaultValue={assignment.instructions || ''}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Provide detailed step-by-step instructions for students..."
                 />
               </div>
 

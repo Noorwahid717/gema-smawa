@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
         status: WebLabStatus.PUBLISHED,
         OR: [
           { classLevel: null },
+          { classLevel: 'All Classes' },
           { classLevel: student.class }
         ]
       },

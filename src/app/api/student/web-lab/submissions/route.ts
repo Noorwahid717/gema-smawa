@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       select: { id: true, status: true }
     })
 
-    if (!student || student.status !== 'active') {
+    if (!student || student.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, status: true }
     })
 
-    if (!student || student.status !== 'active') {
+    if (!student || student.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
