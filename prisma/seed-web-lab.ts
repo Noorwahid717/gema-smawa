@@ -81,7 +81,8 @@ console.log('Halaman profil dimuat');`,
       ]),
       points: 100,
       timeLimit: 60,
-      status: WebLabStatus.PUBLISHED
+      status: WebLabStatus.PUBLISHED,
+      template: 'html-basic',
     },
     {
       title: 'Form Kontak Interaktif',
@@ -187,7 +188,8 @@ button:hover {
       ]),
       points: 150,
       timeLimit: 90,
-      status: WebLabStatus.PUBLISHED
+      status: WebLabStatus.PUBLISHED,
+      template: 'portfolio-basic',
     },
     {
       title: 'Galeri Foto dengan Modal',

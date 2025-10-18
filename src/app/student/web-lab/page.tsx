@@ -1,38 +1,64 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { studentAuth } from '@/lib/student-auth'
-import { WebLabAssignment, WebLabSubmissionStatus, WebLabDifficulty } from '@prisma/client'
+import StudentLayout from '@/components/student/StudentLayout'
+import Breadcrumb from '@/components/ui/Breadcrumb'
+import {
+  Code,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Play,
+  BookOpen,
+  Target,
+  Calendar,
+  Award,
+  TrendingUp
+} from 'lucide-react'
 
-interface AssignmentWithSubmission extends WebLabAssignment {
-  submissions: Array<{
+interface Assignment {
+  id: string
+  title: string
+  description: string
+  difficulty: string
+  classLevel: string | null
+  instructions: string
+  starterHtml?: string
+  starterCss?: string
+  starterJs?: string
+  template?: string
+  requirements?: string[]
+  hints?: string[]
+  points: number
+  timeLimit?: number
+  status: string
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+  submissions?: Array<{
     id: string
-    status: WebLabSubmissionStatus
-    score?: number | null
-    submittedAt?: string | null
+    status: string
+    submittedAt: string
+    grade?: number
+    feedback?: string
   }>
-  _count: {
+  _count?: {
     submissions: number
   }
 }
 
 export default function StudentWebLabPage() {
   const router = useRouter()
-  const [assignments, setAssignments] = useState<AssignmentWithSubmission[]>([])
+  const [assignments, setAssignments] = useState<Assignment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchAssignments = useCallback(async () => {
+  const fetchAssignments = useCallback(async (studentId: string) => {
     try {
       setLoading(true)
-      const session = studentAuth.getSession()
-      if (!session) {
-        router.push('/student/login')
-        return
-      }
-
-      const response = await fetch(`/api/student/web-lab?studentId=${session.studentId}`)
+      const response = await fetch(`/api/student/web-lab?studentId=${studentId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch assignments')
       }
@@ -44,140 +70,288 @@ export default function StudentWebLabPage() {
     } finally {
       setLoading(false)
     }
-  }, [router])
+  }, [])
 
   useEffect(() => {
-    const session = studentAuth.getSession()
-    if (!session) {
-      router.push('/student/login')
-      return
+    const checkAuthAndLoadData = async () => {
+      try {
+        const session = studentAuth.getSession()
+        if (!session) {
+          router.push('/student/login')
+          return
+        }
+
+        fetchAssignments(session.studentId)
+      } catch (error) {
+        console.error('Auth error:', error)
+        router.push('/student/login')
+      }
     }
 
-    fetchAssignments()
+    checkAuthAndLoadData()
   }, [router, fetchAssignments])
 
-  const getStatusBadge = (assignment: AssignmentWithSubmission) => {
-    const submission = assignment.submissions[0]
+  const getStatusBadge = (assignment: Assignment) => {
+    const submission = assignment.submissions?.[0]
 
     if (!submission) {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-          Not Started
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <Play className="w-3 h-3 mr-1" />
+          Belum Dimulai
         </span>
       )
     }
 
-    const colors = {
-      [WebLabSubmissionStatus.DRAFT]: 'bg-yellow-100 text-yellow-800',
-      [WebLabSubmissionStatus.SUBMITTED]: 'bg-blue-100 text-blue-800',
-      [WebLabSubmissionStatus.GRADED]: 'bg-green-100 text-green-800',
-      [WebLabSubmissionStatus.RETURNED]: 'bg-orange-100 text-orange-800'
+    const statusConfig = {
+      submitted: {
+        color: 'bg-blue-100 text-blue-800',
+        icon: Clock,
+        text: 'Dikirim'
+      },
+      graded: {
+        color: 'bg-green-100 text-green-800',
+        icon: CheckCircle,
+        text: 'Dinilai'
+      },
+      late: {
+        color: 'bg-orange-100 text-orange-800',
+        icon: AlertCircle,
+        text: 'Terlambat'
+      }
     }
 
+    const config = statusConfig[submission.status as keyof typeof statusConfig] || statusConfig.submitted
+    const Icon = config.icon
+
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[submission.status]}`}>
-        {submission.status}
-        {submission.score !== null && ` (${submission.score}pts)`}
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+        <Icon className="w-3 h-3 mr-1" />
+        {config.text}
+        {submission.grade !== undefined && ` (${submission.grade}pts)`}
       </span>
     )
   }
 
-  const getDifficultyBadge = (difficulty: WebLabDifficulty) => {
-    const colors = {
-      [WebLabDifficulty.BEGINNER]: 'bg-blue-100 text-blue-800',
-      [WebLabDifficulty.INTERMEDIATE]: 'bg-orange-100 text-orange-800',
-      [WebLabDifficulty.ADVANCED]: 'bg-red-100 text-red-800'
+  const getDifficultyFromTitle = (title: string) => {
+    if (title.toLowerCase().includes('portfolio') || title.toLowerCase().includes('sederhana')) {
+      return { level: 'Pemula', color: 'bg-green-100 text-green-800' }
     }
-
-    return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[difficulty]}`}>
-        {difficulty}
-      </span>
-    )
+    if (title.toLowerCase().includes('form') || title.toLowerCase().includes('interaktif')) {
+      return { level: 'Menengah', color: 'bg-yellow-100 text-yellow-800' }
+    }
+    if (title.toLowerCase().includes('gallery') || title.toLowerCase().includes('advanced')) {
+      return { level: 'Lanjutan', color: 'bg-red-100 text-red-800' }
+    }
+    return { level: 'Menengah', color: 'bg-yellow-100 text-yellow-800' }
   }
+
+  const breadcrumbItems = [
+    { label: 'Dashboard', href: '/student/dashboard-simple' },
+    { label: 'Web Lab', href: '/student/web-lab' }
+  ]
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
-      </div>
+      <StudentLayout>
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Memuat tugas Web Lab...</p>
+          </div>
+        </div>
+      </StudentLayout>
     )
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Web Lab</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Practice your HTML, CSS, and JavaScript skills with interactive coding assignments.
-          </p>
-        </div>
-      </div>
+    <StudentLayout>
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb */}
+        <Breadcrumb items={breadcrumbItems} />
 
-      {/* Assignments Grid */}
-      <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {assignments.map((assignment) => (
-          <div
-            key={assignment.id}
-            className="bg-white overflow-hidden shadow rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-medium text-gray-900 line-clamp-2">
-                  {assignment.title}
-                </h3>
-                {getDifficultyBadge(assignment.difficulty)}
-              </div>
-
-              <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                {assignment.description}
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+              <Code className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Web Lab</h1>
+              <p className="text-gray-600 mt-1">
+                Latihan koding HTML, CSS, dan JavaScript dengan tugas interaktif
               </p>
-
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(assignment)}
-                </div>
-                <span className="text-sm font-medium text-indigo-600">
-                  {assignment.points} pts
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                <span>Class: {assignment.classLevel || 'All'}</span>
-                <span>{assignment._count.submissions} submissions</span>
-              </div>
-
-              <button
-                onClick={() => router.push(`/student/web-lab/${assignment.id}`)}
-                className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-              >
-                {assignment.submissions[0] ? 'Continue Assignment' : 'Start Assignment'}
-              </button>
             </div>
           </div>
-        ))}
-      </div>
 
-      {assignments.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <div className="mx-auto h-12 w-12 text-gray-400">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <BookOpen className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Tugas</p>
+                  <p className="text-2xl font-bold text-gray-900">{assignments.length}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Selesai</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {assignments.filter(a => a.submissions?.[0]?.status === 'graded').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <Clock className="w-6 h-6 text-yellow-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Dalam Proses</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {assignments.filter(a => a.submissions?.[0]?.status === 'submitted').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Terlambat</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {assignments.filter(a => !a.submissions?.[0]).length}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No assignments available</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Check back later for new web programming assignments.
-          </p>
         </div>
-      )}
 
-      {error && (
-        <div className="mt-4 rounded-md bg-red-50 p-4">
-          <div className="text-sm text-red-700">{error}</div>
-        </div>
-      )}
-    </div>
+        {/* Assignments Grid */}
+        {assignments.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {assignments.map((assignment) => {
+              const difficulty = getDifficultyFromTitle(assignment.title)
+              const hasSubmission = assignment.submissions?.[0]
+
+              return (
+                <div
+                  key={assignment.id}
+                  className={`bg-white rounded-xl shadow-sm border transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+                    !hasSubmission ? 'border-red-200 bg-red-50' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="p-6">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                          {assignment.title}
+                        </h3>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${difficulty.color}`}>
+                            <Target className="w-3 h-3 mr-1" />
+                            {difficulty.level}
+                          </span>
+                          {getStatusBadge(assignment)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                      {assignment.description}
+                    </p>
+
+                    {/* Requirements Preview */}
+                    {assignment.requirements && Array.isArray(assignment.requirements) && assignment.requirements.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-gray-500 mb-2">
+                          Persyaratan ({assignment.requirements.length}):
+                        </p>
+                        <ul className="space-y-1">
+                          {assignment.requirements.slice(0, 2).map((req, i) => (
+                            <li key={i} className="text-xs text-gray-600 flex items-start">
+                              <span className="text-green-500 mr-2 mt-1">•</span>
+                              <span className="line-clamp-2">{req}</span>
+                            </li>
+                          ))}
+                          {assignment.requirements.length > 2 && (
+                            <li className="text-xs text-gray-500 italic">
+                              +{assignment.requirements.length - 2} persyaratan lainnya...
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Action Button */}
+                    <button
+                      onClick={() => router.push(`/student/web-lab/${assignment.id}`)}
+                      className={`w-full py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                        hasSubmission
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                          : 'bg-green-600 hover:bg-green-700 text-white'
+                      }`}
+                    >
+                      {hasSubmission ? (
+                        <>
+                          <TrendingUp className="w-4 h-4" />
+                          Lanjutkan Tugas
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4" />
+                          Mulai Tugas
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <div className="mx-auto h-24 w-24 text-gray-400 mb-4">
+              <Code className="w-full h-full" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Belum ada tugas Web Lab</h3>
+            <p className="text-gray-500 max-w-md mx-auto">
+              Tugas-tugas Web Lab akan muncul di sini setelah guru membuatnya.
+              Silakan kembali lagi nanti.
+            </p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-8 rounded-xl bg-red-50 border border-red-200 p-6">
+            <div className="flex items-center">
+              <AlertCircle className="w-6 h-6 text-red-600 mr-3" />
+              <div>
+                <h3 className="text-sm font-medium text-red-800">Terjadi Kesalahan</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </StudentLayout>
   )
 }

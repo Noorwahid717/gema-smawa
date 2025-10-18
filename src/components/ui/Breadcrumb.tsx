@@ -17,7 +17,7 @@ export default function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
   return (
     <nav className={`flex items-center space-x-2 text-sm text-gray-600 ${className}`}>
       <Link
-        href="/admin/dashboard"
+        href="/student/dashboard-simple"
         className="flex items-center hover:text-blue-600 transition-colors"
       >
         <Home className="w-4 h-4" />
