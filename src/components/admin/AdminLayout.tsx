@@ -24,9 +24,11 @@ import Image from 'next/image'
 import NotificationPanel from './NotificationPanel'
 import { ToastProvider } from '@/components/feedback/toast'
 import AdminChatPanel from './AdminChatPanel'
+import PageWrapper from '@/components/ui/PageWrapper'
 
 interface AdminLayoutProps {
   children: React.ReactNode
+  loading?: boolean
 }
 
 interface NavigationItem {
@@ -37,7 +39,7 @@ interface NavigationItem {
   badge?: number
 }
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export default function AdminLayout({ children, loading = false }: AdminLayoutProps) {
   const { data: session, status } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -327,7 +329,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
         
         <main className="flex-1">
-          {children}
+          <PageWrapper loading={loading}>
+            {children}
+          </PageWrapper>
         </main>
       </div>
     </div>

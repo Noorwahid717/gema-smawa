@@ -18,9 +18,11 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { studentAuth } from '@/lib/student-auth'
+import PageWrapper from '@/components/ui/PageWrapper'
 
 interface StudentLayoutProps {
   children: React.ReactNode
+  loading?: boolean
 }
 
 interface NavigationItem {
@@ -32,7 +34,7 @@ interface NavigationItem {
   teacherOnly?: boolean
 }
 
-export default function StudentLayout({ children }: StudentLayoutProps) {
+export default function StudentLayout({ children, loading = false }: StudentLayoutProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -330,7 +332,9 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
         </div>
 
         <main className="flex-1 pb-16 md:pb-0">
-          {children}
+          <PageWrapper loading={loading}>
+            {children}
+          </PageWrapper>
         </main>
       </div>
     </div>
