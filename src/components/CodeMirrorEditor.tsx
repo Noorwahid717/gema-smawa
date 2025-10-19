@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import { EditorView, basicSetup } from 'codemirror'
-import { EditorState } from '@codemirror/state'
+import { Compartment, EditorState, Extension } from '@codemirror/state'
+import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { html } from '@codemirror/lang-html'
 import { css } from '@codemirror/lang-css'
 import { javascript } from '@codemirror/lang-javascript'
@@ -14,39 +15,40 @@ interface CodeMirrorEditorProps {
   language: 'html' | 'css' | 'javascript'
 }
 
+type Language = CodeMirrorEditorProps['language']
+
+const createLanguageExtension = (language: Language): Extension => {
+  if (language === 'html') return html()
+  if (language === 'css') return css()
+  return javascript()
+}
+
 export default function CodeMirrorEditor({ value, onChange, language }: CodeMirrorEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null)
+  const editorContainerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const languageCompartmentRef = useRef(new Compartment())
+  const onChangeRef = useRef(onChange)
 
   useEffect(() => {
-    if (!editorRef.current) return
+    onChangeRef.current = onChange
+  }, [onChange])
 
-    // Get the appropriate language extension
-    const getLanguageExtension = () => {
-      switch (language) {
-        case 'html':
-          return html()
-        case 'css':
-          return css()
-        case 'javascript':
-          return javascript()
-        default:
-          return []
-      }
-    }
+  useEffect(() => {
+    if (!editorContainerRef.current || viewRef.current) return
 
-    // Create editor state
-    const state = EditorState.create({
+    const initialState = EditorState.create({
       doc: value,
       extensions: [
         basicSetup,
-        getLanguageExtension(),
+        languageCompartmentRef.current.of(createLanguageExtension(language)),
         oneDark,
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
-            onChange(update.state.doc.toString())
+            onChangeRef.current(update.state.doc.toString())
           }
         }),
+        // Keep visual tweaks at the very end so they override bundled defaults
         EditorView.theme({
           '&': {
             height: '100%',
@@ -70,35 +72,47 @@ export default function CodeMirrorEditor({ value, onChange, language }: CodeMirr
       ]
     })
 
-    // Create editor view
     const view = new EditorView({
-      state,
-      parent: editorRef.current
+      state: initialState,
+      parent: editorContainerRef.current
     })
 
     viewRef.current = view
 
     return () => {
       view.destroy()
+      viewRef.current = null
     }
-  }, [language, value, onChange])
+  }, [language, value])
 
-  // Update editor content when value prop changes (but not from internal edits)
   useEffect(() => {
-    if (viewRef.current && viewRef.current.state.doc.toString() !== value) {
-      viewRef.current.dispatch({
-        changes: {
-          from: 0,
-          to: viewRef.current.state.doc.length,
-          insert: value
-        }
-      })
-    }
+    const view = viewRef.current
+    if (!view) return
+
+    const currentDoc = view.state.doc.toString()
+    if (currentDoc === value) return
+
+    view.dispatch({
+      changes: {
+        from: 0,
+        to: view.state.doc.length,
+        insert: value
+      }
+    })
   }, [value])
+
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+
+    view.dispatch({
+      effects: languageCompartmentRef.current.reconfigure(createLanguageExtension(language))
+    })
+  }, [language])
 
   return (
     <div
-      ref={editorRef}
+      ref={editorContainerRef}
       className="w-full h-full min-h-[400px] border-0"
       style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace' }}
     />
