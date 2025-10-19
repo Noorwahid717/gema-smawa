@@ -6,6 +6,7 @@ import { EditorState } from '@codemirror/state'
 import { html } from '@codemirror/lang-html'
 import { css } from '@codemirror/lang-css'
 import { javascript } from '@codemirror/lang-javascript'
+import { oneDark } from '@codemirror/theme-one-dark'
 
 interface CodeMirrorEditorProps {
   value: string
@@ -40,6 +41,7 @@ export default function CodeMirrorEditor({ value, onChange, language }: CodeMirr
       extensions: [
         basicSetup,
         getLanguageExtension(),
+        oneDark,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChange(update.state.doc.toString())
