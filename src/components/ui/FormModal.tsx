@@ -171,23 +171,35 @@ export default function FormModal({
     }
   }
 
-  if (!isOpen) return null
-
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className={`w-full ${getSizeClasses()} bg-white rounded-xl shadow-xl max-h-[90vh] overflow-hidden`}
-        >
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.button
+            type="button"
+            aria-label="Tutup modal"
+            onClick={onClose}
+            className="modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          />
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className={`interactive-card w-full ${getSizeClasses()} bg-white rounded-xl shadow-xl max-h-[90vh] overflow-hidden`}
+          >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              className="interactive-button p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
               disabled={isSubmitting}
             >
               <X className="w-5 h-5" />
@@ -317,7 +329,8 @@ export default function FormModal({
             </div>
           </form>
         </motion.div>
-      </div>
+        </div>
+      )}
     </AnimatePresence>
   )
 }
