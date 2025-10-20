@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { studentAuth } from '@/lib/student-auth'
+import { AnimatePresence, motion } from 'framer-motion'
 
 interface StudentLayoutProps {
   children: React.ReactNode
@@ -113,71 +114,87 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
       </div>
 
       {/* Mobile sidebar */}
-      <div className={`fixed inset-0 flex z-40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
-            <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white bg-white"
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            className="fixed inset-0 z-40 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          >
+            <motion.button
+              type="button"
+              aria-label="Tutup menu"
               onClick={() => setSidebarOpen(false)}
-              title="Tutup menu"
+              className="modal-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            <motion.div
+              className="drawer-panel shadow-xl"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
-              <X className="h-6 w-6 text-gray-600" />
-            </button>
-          </div>
-          <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div className="flex-shrink-0 flex items-center px-4">
-              <Image
-                src="/gema.svg"
-                alt="GEMA Logo"
-                width={40}
-                height={40}
-                className="h-10 w-auto"
-              />
-              <span className="ml-2 text-xl font-bold text-gray-900">GEMA Student</span>
-            </div>
-            <nav className="mt-5 px-2 space-y-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-2 py-3 text-base font-medium rounded-lg transition-all duration-200 ${
-                    item.active
-                      ? 'bg-blue-50 border-r-4 border-blue-500 text-blue-700 shadow-sm'
-                      : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:shadow-sm'
-                  }`}
+              <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <Image src="/gema.svg" alt="GEMA Logo" width={40} height={40} className="h-10 w-auto" />
+                  <span className="text-xl font-bold text-gray-900">GEMA Student</span>
+                </div>
+                <button
+                  className="interactive-button text-gray-500 hover:text-gray-700 bg-white/70 rounded-full p-2"
                   onClick={() => setSidebarOpen(false)}
+                  title="Tutup menu"
                 >
-                  <item.icon className={`mr-3 h-6 w-6 transition-colors ${
-                    item.active ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
-                  }`} />
-                  <span className="flex-1">{item.name}</span>
-                  {item.badge && (
-                    <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-            <div className="flex items-center justify-between w-full">
-              <div className="ml-3">
-                <p className="text-base font-medium text-gray-700">{student.fullName}</p>
-                <p className="text-sm text-gray-500">{student.class} • {student.studentId}</p>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={handleLogout}
-                className="text-gray-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors"
-                title="Keluar"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+              <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`interactive-card group flex items-center px-3 py-3 text-base font-medium rounded-lg transition-all duration-200 ${
+                      item.active
+                        ? 'bg-blue-50 border-r-4 border-blue-500 text-blue-700 shadow-sm'
+                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:shadow-sm'
+                    }`}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <item.icon className={`interactive-icon mr-3 h-6 w-6 transition-colors ${
+                      item.active ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                    }`} />
+                    <span className="flex-1">{item.name}</span>
+                    {item.badge && (
+                      <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </nav>
+              <div className="border-t border-gray-200 p-4">
+                <div className="flex items-center justify-between w-full">
+                  <div>
+                    <p className="text-base font-medium text-gray-700">{student.fullName}</p>
+                    <p className="text-sm text-gray-500">{student.class} • {student.studentId}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="interactive-button text-gray-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50"
+                    title="Keluar"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Desktop sidebar */}
       <div className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-300 ease-in-out ${

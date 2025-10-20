@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppSessionProvider } from "@/components/providers/AppSessionProvider";
 import "./globals.css";
+import PageTransition from "@/components/ui/PageTransition";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -83,7 +84,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AppSessionProvider>{children}</AppSessionProvider>
+        <AppSessionProvider>
+          <PageTransition>{children}</PageTransition>
+        </AppSessionProvider>
       </body>
     </html>
   );

@@ -2,9 +2,9 @@
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { 
-  MessageSquare, 
-  UserPlus, 
+import {
+  MessageSquare,
+  UserPlus,
   Calendar,
   Settings,
   BarChart3,
@@ -18,6 +18,7 @@ import {
   FileText
 } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 interface DashboardStats {
   totalContacts: number
@@ -158,36 +159,61 @@ export default function AdminDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statsCards.map((card, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">{card.title}</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {isLoading ? '...' : card.value.toLocaleString()}
-                  </p>
-                  <p className={`text-sm mt-1 ${
-                    card.changeType === 'increase' ? 'text-green-600' : 
-                    card.changeType === 'decrease' ? 'text-red-600' : 'text-gray-600'
-                  }`}>
-                    {card.change}
-                  </p>
-                </div>
-                <div className={`${card.color} p-3 rounded-lg`}>
-                  <card.icon className="w-6 h-6 text-white" />
+          {isLoading
+            ? Array.from({ length: statsCards.length }).map((_, index) => (
+              <div
+                key={`skeleton-${index}`}
+                className="interactive-card bg-white rounded-lg shadow-md p-6 border border-gray-200 focus:outline-none"
+                aria-hidden="true"
+              >
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex-1 space-y-3">
+                    <Skeleton variant="text" className="w-24 h-4" />
+                    <Skeleton variant="text" className="w-16 h-8" />
+                    <Skeleton variant="text" className="w-20 h-4" />
+                  </div>
+                  <div className="w-12 h-12 rounded-xl skeleton-block skeleton-animate" />
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+            : statsCards.map((card, index) => (
+              <div
+                key={index}
+                className="interactive-card data-section is-ready bg-white rounded-lg shadow-md p-6 border border-gray-200 focus:outline-none"
+                tabIndex={0}
+                aria-label={`${card.title} bernilai ${card.value.toLocaleString('id-ID')}`}
+              >
+                <div className="flex items-center justify-between gap-6">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">{card.title}</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {card.value.toLocaleString('id-ID')}
+                    </p>
+                    <p
+                      className={`status-badge text-sm mt-1 ${
+                        card.changeType === 'increase' ? 'text-green-600' :
+                        card.changeType === 'decrease' ? 'text-red-600' : 'text-gray-600'
+                      }`}
+                      data-status={card.changeType === 'increase' ? 'completed' : undefined}
+                    >
+                      {card.change}
+                    </p>
+                  </div>
+                  <div className={`${card.color} p-3 rounded-lg shadow-sm`}> 
+                    <card.icon className="interactive-icon w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </div>
+            ))}
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Recent Activities */}
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <div className="interactive-card data-section is-ready bg-white rounded-lg shadow-md p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Aktivitas Terbaru</h2>
-              <Bell className="w-5 h-5 text-gray-400" />
+              <Bell className="interactive-icon w-5 h-5 text-gray-400" />
             </div>
             <div className="space-y-4">
               <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
@@ -215,42 +241,42 @@ export default function AdminDashboard() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <div className="interactive-card data-section is-ready bg-white rounded-lg shadow-md p-6 border border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Aksi Cepat</h2>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               <a
                 href="/admin/registrations"
-                className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                className="interactive-card flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors focus:outline-none"
               >
-                <UserPlus className="w-8 h-8 text-blue-600 mb-2" />
+                <UserPlus className="interactive-icon w-8 h-8 text-blue-600 mb-2" />
                 <span className="text-sm font-medium text-blue-900">Kelola Pendaftaran</span>
               </a>
               <a
                 href="/admin/contacts"
-                className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                className="interactive-card flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors focus:outline-none"
               >
-                <MessageSquare className="w-8 h-8 text-green-600 mb-2" />
+                <MessageSquare className="interactive-icon w-8 h-8 text-green-600 mb-2" />
                 <span className="text-sm font-medium text-green-900">Lihat Pesan</span>
               </a>
               <a
                 href="/admin/classroom"
-                className="flex flex-col items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                className="interactive-card flex flex-col items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors focus:outline-none"
               >
-                <BookOpen className="w-8 h-8 text-indigo-600 mb-2" />
+                <BookOpen className="interactive-icon w-8 h-8 text-indigo-600 mb-2" />
                 <span className="text-sm font-medium text-indigo-900">Classroom</span>
               </a>
               <a
                 href="/admin/activities"
-                className="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                className="interactive-card flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors focus:outline-none"
               >
-                <Calendar className="w-8 h-8 text-purple-600 mb-2" />
+                <Calendar className="interactive-icon w-8 h-8 text-purple-600 mb-2" />
                 <span className="text-sm font-medium text-purple-900">Kelola Kegiatan</span>
               </a>
               <a
                 href="/admin/settings"
-                className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="interactive-card flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none"
               >
-                <Settings className="w-8 h-8 text-gray-600 mb-2" />
+                <Settings className="interactive-icon w-8 h-8 text-gray-600 mb-2" />
                 <span className="text-sm font-medium text-gray-900">Pengaturan</span>
               </a>
             </div>
@@ -260,10 +286,10 @@ export default function AdminDashboard() {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Registration Chart */}
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <div className="interactive-card data-section is-ready bg-white rounded-lg shadow-md p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Grafik Pendaftaran</h2>
-              <BarChart3 className="w-5 h-5 text-gray-400" />
+              <BarChart3 className="interactive-icon w-5 h-5 text-gray-400" />
             </div>
             <div className="h-64 flex items-center justify-center text-gray-500">
               {/* Placeholder for chart */}
@@ -275,10 +301,10 @@ export default function AdminDashboard() {
           </div>
 
           {/* Analytics */}
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <div className="interactive-card data-section is-ready bg-white rounded-lg shadow-md p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Analisis Website</h2>
-              <Eye className="w-5 h-5 text-gray-400" />
+              <Eye className="interactive-icon w-5 h-5 text-gray-400" />
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">

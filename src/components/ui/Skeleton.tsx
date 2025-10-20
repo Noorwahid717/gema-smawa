@@ -13,7 +13,7 @@ export function Skeleton({
   variant = 'rectangular',
   animation = true
 }: SkeletonProps) {
-  const baseClasses = 'bg-gray-200 dark:bg-gray-700'
+  const baseClasses = 'skeleton-block'
 
   const variantClasses = {
     text: 'h-4 rounded',
@@ -21,7 +21,7 @@ export function Skeleton({
     circular: 'rounded-full'
   }
 
-  const animationClasses = animation ? 'animate-pulse' : ''
+  const animationClasses = animation ? 'skeleton-animate' : ''
 
   return (
     <div
@@ -47,7 +47,7 @@ export function SkeletonCard({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}
+      className={`interactive-card bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}
     >
       {showAvatar && (
         <div className="flex items-center space-x-4 mb-4">
@@ -102,7 +102,7 @@ export function SkeletonList({ count = 5, className = '' }: SkeletonListProps) {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: index * 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+          className="interactive-card bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
         >
           <div className="flex items-center space-x-4">
             <Skeleton variant="circular" className="w-10 h-10" />

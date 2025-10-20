@@ -2,7 +2,7 @@
 
 import { signOut, useSession } from 'next-auth/react'
 import { useState } from 'react'
-import { 
+import {
   Menu,
   X,
   Home,
@@ -24,6 +24,7 @@ import Image from 'next/image'
 import NotificationPanel from './NotificationPanel'
 import { ToastProvider } from '@/components/feedback/toast'
 import AdminChatPanel from './AdminChatPanel'
+import { AnimatePresence, motion } from 'framer-motion'
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -99,67 +100,88 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <ToastProvider>
       <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
-      <div className={`fixed inset-0 flex z-40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
-            <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            className="fixed inset-0 z-40 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          >
+            <motion.button
+              type="button"
+              aria-label="Tutup menu"
               onClick={() => setSidebarOpen(false)}
-              title="Tutup menu"
+              className="modal-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            <motion.div
+              className="drawer-panel shadow-xl"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
-              <X className="h-6 w-6 text-white" />
-            </button>
-          </div>
-          <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div className="flex-shrink-0 flex items-center px-4">
-              <Image
-                src="/gema.svg"
-                alt="GEMA Logo"
-                width={40}
-                height={40}
-                className="h-10 w-auto"
-              />
-              <span className="ml-2 text-xl font-bold text-gray-900">GEMA Admin</span>
-            </div>
-            <nav className="mt-5 px-2 space-y-1">
-              {navigation.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <Image src="/gema.svg" alt="GEMA Logo" width={40} height={40} className="h-10 w-auto" />
+                  <span className="text-xl font-bold text-gray-900">GEMA Admin</span>
+                </div>
+                <button
+                  className="interactive-button text-white bg-blue-500 hover:bg-blue-600 rounded-full p-2"
+                  onClick={() => setSidebarOpen(false)}
+                  title="Tutup menu"
                 >
-                  <item.icon className="mr-4 h-6 w-6" />
-                  {item.name}
-                </a>
-              ))}
-            </nav>
-          </div>
-          <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-            <div className="flex items-center justify-between w-full">
-              <div className="ml-3">
-                <p className="text-base font-medium text-gray-700">{session?.user?.name}</p>
-                <div className="flex items-center gap-4 mt-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
+                {navigation.map((item) => (
                   <a
-                    href="/admin/profile"
-                    className="text-sm font-medium text-gray-500 hover:text-gray-700 flex items-center"
+                    key={item.name}
+                    href={item.href}
+                    className="interactive-card group flex items-center px-3 py-3 text-base font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    onClick={() => setSidebarOpen(false)}
                   >
-                    <Settings className="w-4 h-4 mr-1" />
-                    Profile
+                    <item.icon className="interactive-icon mr-4 h-6 w-6" />
+                    {item.name}
+                    {item.badge && (
+                      <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
                   </a>
+                ))}
+              </nav>
+              <div className="border-t border-gray-200 p-4">
+                <div className="flex items-center justify-between w-full">
+                  <div>
+                    <p className="text-base font-medium text-gray-700">{session?.user?.name}</p>
+                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                      <a
+                        href="/admin/profile"
+                        className="interactive-card inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100"
+                      >
+                        <Settings className="interactive-icon w-4 h-4" />
+                        Profile
+                      </a>
+                    </div>
+                  </div>
                   <button
                     onClick={handleSignOut}
-                    className="text-sm font-medium text-gray-500 hover:text-gray-700 flex items-center"
+                    className="interactive-button text-gray-500 hover:text-red-600 p-2 rounded-lg hover:bg-red-50"
                   >
-                    <LogOut className="w-4 h-4 mr-1" />
-                    Keluar
+                    <LogOut className="w-5 h-5" />
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Desktop sidebar */}
       <div className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-300 ease-in-out ${
