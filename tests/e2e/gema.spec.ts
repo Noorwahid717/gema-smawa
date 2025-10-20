@@ -34,9 +34,9 @@ type AdminCred = { email: string; password: string };
 
 async function loginAsAdmin(page: import('@playwright/test').Page, credentials: AdminCred = adminCredentials.super) {
   await page.goto('/admin/login');
-  await expect(page.getByRole('heading', { name: 'Masuk Admin' })).toBeVisible();
-  await page.getByLabel('Email Admin').fill(credentials.email);
-  await page.getByLabel('Password').fill(credentials.password);
+  await expect(page.getByRole('heading', { name: 'Masuk Admin', level: 2 })).toBeVisible();
+  await page.getByPlaceholder('admin@smawahidiyah.edu').fill(credentials.email);
+  await page.getByPlaceholder('Masukkan password').fill(credentials.password);
   await page.getByRole('button', { name: /Masuk Admin/ }).click();
   await page.waitForURL('**/admin/dashboard', { timeout: 60_000 });
   await expect(page).toHaveURL(/\/admin\/dashboard/);
@@ -76,14 +76,14 @@ test('Admin can authenticate and manage platform content', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Masuk Admin' })).toBeVisible();
 
   // Invalid credential validation
-  await page.getByLabel('Email Admin').fill('invalid@admin.com');
-  await page.getByLabel('Password').fill('wrong-password');
+  await page.getByPlaceholder('admin@smawahidiyah.edu').fill('invalid@admin.com');
+  await page.getByPlaceholder('Masukkan password').fill('wrong-password');
   await page.getByRole('button', { name: /Masuk Admin/ }).click();
-  await expect(page.getByTestId('error-message')).toBeVisible();
+  await expect(page.locator('div[role="alert"]')).toBeVisible();
 
   // Successful login as super admin
-  await page.getByLabel('Email Admin').fill(adminCredentials.super.email);
-  await page.getByLabel('Password').fill(adminCredentials.super.password);
+  await page.getByPlaceholder('admin@smawahidiyah.edu').fill(adminCredentials.super.email);
+  await page.getByPlaceholder('Masukkan password').fill(adminCredentials.super.password);
   await page.getByRole('button', { name: /Masuk Admin/ }).click();
   await page.waitForURL('**/admin/dashboard', { timeout: 60_000 });
   await expect(page).toHaveURL(/\/admin\/dashboard/);

@@ -295,140 +295,167 @@ export default function WebLabAssignmentPage() {
 
       {/* Main Content */}
       <div className="flex-1 bg-gray-50">
-        <div className="max-w-7xl mx-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-300px)]">
-            {/* Code Editor */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              {/* Tabs */}
-              <div className="border-b border-gray-200">
-                <nav className="flex">
-                  {[
-                    { id: 'html' as TabType, label: 'HTML', color: 'text-orange-600' },
-                    { id: 'css' as TabType, label: 'CSS', color: 'text-blue-600' },
-                    { id: 'js' as TabType, label: 'JavaScript', color: 'text-yellow-600' },
-                    { id: 'preview' as TabType, label: 'Preview', color: 'text-green-600' }
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === tab.id
-                          ? `border-blue-500 ${tab.color}`
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-
-              {/* Editor Content */}
-              <div className="h-full">
-                {activeTab === 'html' && (
-                  <CodeMirrorEditor
-                    value={html}
-                    onChange={setHtml}
-                    language="html"
-                  />
-                )}
-                {activeTab === 'css' && (
-                  <CodeMirrorEditor
-                    value={css}
-                    onChange={setCss}
-                    language="css"
-                  />
-                )}
-                {activeTab === 'js' && (
-                  <CodeMirrorEditor
-                    value={js}
-                    onChange={setJs}
-                    language="javascript"
-                  />
-                )}
-                {activeTab === 'preview' && (
-                  <div className="h-full p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-medium text-gray-900">Live Preview</h3>
-                      <button
-                        onClick={() => setIsPreviewFullscreen(true)}
-                        className="text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        Full Screen
-                      </button>
-                    </div>
-                    <iframe
-                      srcDoc={previewDoc}
-                      className="w-full h-full border border-gray-300 rounded-md"
-                      title="Web Lab Preview"
-                      sandbox="allow-scripts"
-                    />
-                  </div>
-                )}
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          {/* Instructions and Requirements Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Instructions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Instruksi</h3>
+              <div className="prose prose-sm max-w-none">
+                <p className="text-gray-700 whitespace-pre-line">{assignment.instructions}</p>
               </div>
             </div>
 
-            {/* Assignment Info & Requirements */}
-            <div className="space-y-6">
-              {/* Instructions */}
+            {/* Requirements */}
+            {assignment.requirements && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Instruksi</h3>
-                <div className="prose prose-sm max-w-none">
-                  <p className="text-gray-700 whitespace-pre-line">{assignment.instructions}</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Persyaratan</h3>
+                <ul className="space-y-2">
+                  {(() => {
+                    try {
+                      const requirements = JSON.parse(assignment.requirements as string)
+                      return requirements.map((req: unknown, index: number) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-gray-700">{String(req)}</span>
+                        </li>
+                      ))
+                    } catch {
+                      return <li className="text-gray-700">Unable to parse requirements</li>
+                    }
+                  })()}
+                </ul>
+              </div>
+            )}
+
+            {/* If no requirements, show hints in the right column */}
+            {!assignment.requirements && assignment.hints && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Petunjuk</h3>
+                <div className="space-y-3">
+                  {(() => {
+                    try {
+                      const hints = JSON.parse(assignment.hints as string)
+                      return hints.map((hint: unknown, index: number) => (
+                        <div key={index} className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                          <div className="flex items-start gap-2">
+                            <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-blue-800 text-sm">{String(hint)}</span>
+                          </div>
+                        </div>
+                      ))
+                    } catch {
+                      return <div className="text-gray-700">Unable to parse hints</div>
+                    }
+                  })()}
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Requirements */}
-              {assignment.requirements && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Persyaratan</h3>
-                  <ul className="space-y-2">
-                    {(() => {
-                      try {
-                        const requirements = JSON.parse(assignment.requirements as string)
-                        return requirements.map((req: unknown, index: number) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span className="text-gray-700">{String(req)}</span>
-                          </li>
-                        ))
-                      } catch {
-                        return <li className="text-gray-700">Unable to parse requirements</li>
-                      }
-                    })()}
-                  </ul>
-                </div>
+          {/* Code Editor Row */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ height: '500px' }}>
+            {/* Tabs */}
+            <div className="border-b border-gray-200">
+              <nav className="flex">
+                {[
+                  { id: 'html' as TabType, label: 'HTML', color: 'text-orange-600' },
+                  { id: 'css' as TabType, label: 'CSS', color: 'text-blue-600' },
+                  { id: 'js' as TabType, label: 'JavaScript', color: 'text-yellow-600' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === tab.id
+                        ? `border-blue-500 ${tab.color}`
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Editor Content */}
+            <div className="h-full">
+              {activeTab === 'html' && (
+                <CodeMirrorEditor
+                  value={html}
+                  onChange={setHtml}
+                  language="html"
+                />
               )}
-
-              {/* Hints */}
-              {assignment.hints && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Petunjuk</h3>
-                  <div className="space-y-3">
-                    {(() => {
-                      try {
-                        const hints = JSON.parse(assignment.hints as string)
-                        return hints.map((hint: unknown, index: number) => (
-                          <div key={index} className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                            <div className="flex items-start gap-2">
-                              <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span className="text-blue-800 text-sm">{String(hint)}</span>
-                            </div>
-                          </div>
-                        ))
-                      } catch {
-                        return <div className="text-gray-700">Unable to parse hints</div>
-                      }
-                    })()}
-                  </div>
-                </div>
+              {activeTab === 'css' && (
+                <CodeMirrorEditor
+                  value={css}
+                  onChange={setCss}
+                  language="css"
+                />
+              )}
+              {activeTab === 'js' && (
+                <CodeMirrorEditor
+                  value={js}
+                  onChange={setJs}
+                  language="javascript"
+                />
               )}
             </div>
           </div>
+
+          {/* Preview Row */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ height: '400px' }}>
+            <div className="border-b border-gray-200 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-900">Live Preview</h3>
+                <button
+                  onClick={() => setIsPreviewFullscreen(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Full Screen
+                </button>
+              </div>
+            </div>
+            <div className="h-full p-4">
+              <iframe
+                srcDoc={previewDoc}
+                className="w-full h-full border border-gray-300 rounded-md"
+                title="Web Lab Preview"
+                sandbox="allow-scripts"
+              />
+            </div>
+          </div>
+
+          {/* Hints Section (if requirements exist) */}
+          {assignment.requirements && assignment.hints && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Petunjuk</h3>
+              <div className="space-y-3">
+                {(() => {
+                  try {
+                    const hints = JSON.parse(assignment.hints as string)
+                    return hints.map((hint: unknown, index: number) => (
+                      <div key={index} className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                        <div className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-blue-800 text-sm">{String(hint)}</span>
+                        </div>
+                      </div>
+                    ))
+                  } catch {
+                    return <div className="text-gray-700">Unable to parse hints</div>
+                  }
+                })()}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
