@@ -1,0 +1,152 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]: Admin Dashboard
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - img "GEMA Logo" [ref=e17]
+          - generic [ref=e18]: GEMA Admin
+        - button "Collapse sidebar" [ref=e20]:
+          - img [ref=e21]
+        - navigation [ref=e23]:
+          - link "Dashboard" [ref=e24] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - img [ref=e25]
+            - generic [ref=e28]: Dashboard
+          - link "Chat" [ref=e29] [cursor=pointer]:
+            - /url: /admin/chat
+            - img [ref=e30]
+            - generic [ref=e32]: Chat
+          - link "Kontak" [ref=e33] [cursor=pointer]:
+            - /url: /admin/contacts
+            - img [ref=e34]
+            - generic [ref=e36]: Kontak
+          - link "Pendaftaran" [ref=e37] [cursor=pointer]:
+            - /url: /admin/registrations
+            - img [ref=e38]
+            - generic [ref=e41]: Pendaftaran
+          - link "Kegiatan" [ref=e42] [cursor=pointer]:
+            - /url: /admin/activities
+            - img [ref=e43]
+            - generic [ref=e45]: Kegiatan
+          - link "Galeri" [ref=e46] [cursor=pointer]:
+            - /url: /admin/gallery
+            - img [ref=e47]
+            - generic [ref=e51]: Galeri
+          - link "Coding Lab" [ref=e52] [cursor=pointer]:
+            - /url: /admin/coding-lab
+            - img [ref=e53]
+            - generic [ref=e57]: Coding Lab
+          - link "Web Lab" [ref=e58] [cursor=pointer]:
+            - /url: /admin/web-lab
+            - img [ref=e59]
+            - generic [ref=e62]: Web Lab
+          - link "Pengumuman" [ref=e63] [cursor=pointer]:
+            - /url: /admin/announcements
+            - img [ref=e64]
+            - generic [ref=e67]: Pengumuman
+          - link "Siswa" [ref=e68] [cursor=pointer]:
+            - /url: /admin/students
+            - img [ref=e69]
+            - generic [ref=e72]: Siswa
+          - link "Admin" [ref=e73] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e74]
+            - generic [ref=e79]: Admin
+          - link "Pengaturan" [ref=e80] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e81]
+            - generic [ref=e84]: Pengaturan
+      - generic [ref=e86]:
+        - generic [ref=e87]:
+          - paragraph [ref=e88]: Administrator E2E-1760961316506
+          - paragraph [ref=e89]: Administrator
+        - button "Keluar" [ref=e90]:
+          - img [ref=e91]
+    - generic [ref=e94]:
+      - generic [ref=e96]:
+        - heading "Admin Dashboard" [level=1] [ref=e98]
+        - generic [ref=e99]:
+          - button "Notifikasi Real-time" [ref=e101]:
+            - img [ref=e102]
+          - button "Panel Chat" [ref=e107]:
+            - img [ref=e108]
+          - generic [ref=e111]:
+            - generic [ref=e112]:
+              - paragraph [ref=e113]: Administrator E2E-1760961316506
+              - paragraph [ref=e114]: Administrator
+            - generic [ref=e115]:
+              - link "Profile" [ref=e116] [cursor=pointer]:
+                - /url: /admin/profile
+                - img [ref=e117]
+              - button "Keluar" [ref=e120]:
+                - img [ref=e121]
+      - main [ref=e124]:
+        - generic [ref=e127]:
+          - generic [ref=e128]:
+            - heading "Kelola Pendaftaran" [level=1] [ref=e129]
+            - paragraph [ref=e130]: Kelola pendaftaran calon siswa GEMA.
+          - generic [ref=e131]:
+            - generic [ref=e132]:
+              - img [ref=e133]
+              - textbox "Cari berdasarkan nama, email, atau telepon..." [ref=e136]
+            - generic [ref=e137]:
+              - img [ref=e138]
+              - combobox "Filter status pendaftaran" [ref=e140]:
+                - option "Semua Status" [selected]
+                - option "Menunggu"
+                - option "Disetujui"
+                - option "Ditolak"
+          - generic [ref=e141]:
+            - generic [ref=e143]:
+              - img [ref=e144]
+              - generic [ref=e147]:
+                - paragraph [ref=e148]: "1"
+                - paragraph [ref=e149]: Total Pendaftaran
+            - generic [ref=e151]:
+              - img [ref=e152]
+              - generic [ref=e155]:
+                - paragraph [ref=e156]: "1"
+                - paragraph [ref=e157]: Menunggu Review
+            - generic [ref=e159]:
+              - img [ref=e160]
+              - generic [ref=e163]:
+                - paragraph [ref=e164]: "0"
+                - paragraph [ref=e165]: Disetujui
+            - generic [ref=e167]:
+              - img [ref=e168]
+              - generic [ref=e172]:
+                - paragraph [ref=e173]: "0"
+                - paragraph [ref=e174]: Ditolak
+          - table [ref=e177]:
+            - rowgroup [ref=e178]:
+              - row "Calon Siswa Asal Sekolah Tanggal Daftar Status Aksi" [ref=e179]:
+                - cell "Calon Siswa" [ref=e180]
+                - cell "Asal Sekolah" [ref=e181]
+                - cell "Tanggal Daftar" [ref=e182]
+                - cell "Status" [ref=e183]
+                - cell "Aksi" [ref=e184]
+            - rowgroup [ref=e185]:
+              - row "Calon Siswa E2E-1760961316506 calonE2E-1760961316506@example.com 081234567890 - 20 Oktober 2025 pukul 18.56 Menunggu Setujui Tolak Detail" [ref=e186]:
+                - cell "Calon Siswa E2E-1760961316506 calonE2E-1760961316506@example.com 081234567890" [ref=e187]:
+                  - generic [ref=e188]:
+                    - generic [ref=e189]: Calon Siswa E2E-1760961316506
+                    - generic [ref=e190]: calonE2E-1760961316506@example.com
+                    - generic [ref=e191]: "081234567890"
+                - cell "-" [ref=e192]:
+                  - generic [ref=e193]: "-"
+                - cell "20 Oktober 2025 pukul 18.56" [ref=e194]
+                - cell "Menunggu" [ref=e195]:
+                  - generic [ref=e196]:
+                    - img [ref=e197]
+                    - generic [ref=e200]: Menunggu
+                - cell "Setujui Tolak Detail" [ref=e201]:
+                  - button "Setujui" [active] [ref=e202]
+                  - button "Tolak" [ref=e203]
+                  - button "Detail" [ref=e204]
+```
