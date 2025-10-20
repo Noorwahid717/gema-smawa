@@ -7,6 +7,7 @@ import { studentAuth } from '@/lib/student-auth'
 import FloatingChat from '@/components/chat/FloatingChat'
 import StudentLayout from '@/components/student/StudentLayout'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import {
   BookOpen,
   Upload,
@@ -478,8 +479,15 @@ export default function StudentDashboardPage() {
         </motion.div>
 
         {/* Joyful Statistics Cards */}
-        {!statsLoading && dashboardStats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="mb-8">
+          {(statsLoading || !dashboardStats) ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <SkeletonCard key={`stats-skeleton-${index}`} className="min-h-[160px]" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 data-section is-ready">
             {/* Learning Streak */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
@@ -488,7 +496,7 @@ export default function StudentDashboardPage() {
               className="bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl p-6 text-white relative overflow-hidden"
             >
               <div className="absolute top-2 right-2">
-                <Flame className="w-6 h-6 text-orange-200" />
+                <Flame className="interactive-icon w-6 h-6 text-orange-200" />
               </div>
               <div className="relative z-10">
                 <div className="text-3xl font-bold mb-1">{dashboardStats.learningStreak}</div>
@@ -505,10 +513,12 @@ export default function StudentDashboardPage() {
               className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl p-6 text-white relative overflow-hidden"
             >
               <div className="absolute top-2 right-2">
-                <Trophy className="w-6 h-6 text-green-200" />
+                <Trophy className="interactive-icon w-6 h-6 text-green-200" />
               </div>
               <div className="relative z-10">
-                <div className="text-3xl font-bold mb-1">{dashboardStats.completionPercentage}%</div>
+                <div className="text-3xl font-bold mb-1 status-badge" data-status={dashboardStats.completionPercentage === 100 ? 'completed' : undefined}>
+                  {dashboardStats.completionPercentage}%
+                </div>
                 <div className="text-sm text-green-100">Selesai ✨</div>
               </div>
               <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full"></div>
@@ -522,12 +532,12 @@ export default function StudentDashboardPage() {
               className="bg-gradient-to-br from-purple-400 to-indigo-500 rounded-2xl p-6 text-white relative overflow-hidden"
             >
               <div className="absolute top-2 right-2">
-                <Zap className="w-6 h-6 text-purple-200" />
+                <Zap className="interactive-icon w-6 h-6 text-purple-200" />
               </div>
               <div className="relative z-10">
                 <div className="text-3xl font-bold mb-1">{dashboardStats.engagementScore}</div>
                 <div className="text-sm text-purple-100">
-                  {dashboardStats.status.engagement === 'high' ? 'Super Aktif! ⚡' : 
+                  {dashboardStats.status.engagement === 'high' ? 'Super Aktif! ⚡' :
                    dashboardStats.status.engagement === 'medium' ? 'Aktif 💪' : 'Ayo Semangat! 📚'}
                 </div>
               </div>
@@ -540,13 +550,13 @@ export default function StudentDashboardPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4 }}
               className={`rounded-2xl p-6 text-white relative overflow-hidden ${
-                dashboardStats.isActiveThisWeek 
-                  ? 'bg-gradient-to-br from-blue-400 to-cyan-500' 
+                dashboardStats.isActiveThisWeek
+                  ? 'bg-gradient-to-br from-blue-400 to-cyan-500'
                   : 'bg-gradient-to-br from-gray-400 to-gray-500'
               }`}
             >
               <div className="absolute top-2 right-2">
-                <Activity className="w-6 h-6 text-blue-200" />
+                <Activity className="interactive-icon w-6 h-6 text-blue-200" />
               </div>
               <div className="relative z-10">
                 <div className="text-3xl font-bold mb-1">{dashboardStats.weeklyProgress}</div>
@@ -556,9 +566,9 @@ export default function StudentDashboardPage() {
               </div>
               <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full"></div>
             </motion.div>
-          </div>
-        )}
-
+            </div>
+          )}
+        </div>
         {/* Quick Actions */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {/* Assignments Card */}
@@ -566,12 +576,12 @@ export default function StudentDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all cursor-pointer border border-gray-100 hover:border-blue-200 group"
+            className="interactive-card bg-white rounded-xl p-6 shadow-sm transition-all cursor-pointer border border-gray-100 hover:border-blue-200 group data-section is-ready"
             onClick={() => setActiveTab('assignments')}
           >
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <BookOpen className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center transition-transform">
+                <BookOpen className="interactive-icon w-6 h-6 text-blue-600" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Assignments</h3>
@@ -587,7 +597,7 @@ export default function StudentDashboardPage() {
               Tutorial interaktif dengan feedback real-time untuk mengasah skill programming! 💻
             </p>
             {!statsLoading && dashboardStats && dashboardStats.hasOverdueAssignments && (
-              <div className="mt-3 px-3 py-1 bg-red-50 text-red-600 text-xs rounded-full inline-block">
+              <div className="status-badge mt-3 px-3 py-1 bg-red-50 text-red-600 text-xs rounded-full inline-flex" data-state="error">
                 ⚠️ Ada tugas yang terlambat
               </div>
             )}
@@ -598,12 +608,12 @@ export default function StudentDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all cursor-pointer border border-gray-100 hover:border-green-200 group"
+            className="interactive-card bg-white rounded-xl p-6 shadow-sm transition-all cursor-pointer border border-gray-100 hover:border-green-200 group data-section is-ready"
             onClick={() => window.location.href = '/student/coding-lab'}
           >
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Target className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center transition-transform">
+                <Target className="interactive-icon w-6 h-6 text-green-600" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Coding Lab</h3>
@@ -620,9 +630,9 @@ export default function StudentDashboardPage() {
             </p>
             {!statsLoading && dashboardStats && (
               <div className="mt-3">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all"
+                <div className="progress-track">
+                  <div
+                    className={`progress-fill bg-gradient-to-r from-green-400 to-green-600 ${dashboardStats.codingLabProgress === 100 ? 'progress-fill--complete' : ''}`}
                     style={{ width: `${dashboardStats.codingLabProgress}%` }}
                   ></div>
                 </div>
@@ -635,12 +645,12 @@ export default function StudentDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all cursor-pointer border border-gray-100 hover:border-purple-200 group"
+            className="interactive-card bg-white rounded-xl p-6 shadow-sm transition-all cursor-pointer border border-gray-100 hover:border-purple-200 group data-section is-ready"
             onClick={() => setActiveTab('roadmap')}
           >
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Rocket className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center transition-transform">
+                <Rocket className="interactive-icon w-6 h-6 text-purple-600" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Learning Path</h3>
@@ -665,7 +675,7 @@ export default function StudentDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 text-white mb-8 relative overflow-hidden"
+            className="interactive-card bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 text-white mb-8 relative overflow-hidden data-section is-ready"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
@@ -673,7 +683,7 @@ export default function StudentDashboardPage() {
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <Lightbulb className="w-6 h-6 text-white" />
+                  <Lightbulb className="interactive-icon w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">Progress Report</h3>
@@ -706,7 +716,7 @@ export default function StudentDashboardPage() {
 
               <div className="mt-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-pink-200" />
+                  <Heart className="interactive-icon w-5 h-5 text-pink-200" />
                   <span className="text-sm">
                     {dashboardStats.status.engagement === 'high' ? 'Kamu luar biasa aktif!' : 
                      dashboardStats.status.engagement === 'medium' ? 'Keep up the good work!' : 
@@ -916,9 +926,9 @@ export default function StudentDashboardPage() {
                               {dashboardStats.completedAssignments}/{dashboardStats.totalAssignments}
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all"
+                          <div className="progress-track">
+                            <div
+                              className={`progress-fill bg-gradient-to-r from-blue-400 to-blue-600 ${dashboardStats.completionPercentage === 100 ? 'progress-fill--complete' : ''}`}
                               style={{ width: `${dashboardStats.completionPercentage}%` }}
                             ></div>
                           </div>
@@ -1016,8 +1026,9 @@ export default function StudentDashboardPage() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.1 }}
-                          className={`border-2 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group ${
-                            assignment.status === 'completed' 
+                          data-state={isOverdue ? 'error' : undefined}
+                          className={`interactive-card border-2 rounded-2xl p-6 transition-all duration-300 group data-section is-ready ${
+                            assignment.status === 'completed'
                               ? 'border-green-200 bg-green-50 hover:border-green-300' :
                             isOverdue
                               ? 'border-red-200 bg-red-50 hover:border-red-300' :
@@ -1029,7 +1040,7 @@ export default function StudentDashboardPage() {
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-start gap-4 flex-1">
                               <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                assignment.status === 'completed' 
+                                assignment.status === 'completed'
                                   ? 'bg-green-500 text-white' :
                                 isOverdue
                                   ? 'bg-red-500 text-white' :
@@ -1038,11 +1049,11 @@ export default function StudentDashboardPage() {
                                   'bg-blue-500 text-white'
                               }`}>
                                 {assignment.status === 'completed' ? (
-                                  <CheckCircle className="w-6 h-6" />
+                                  <CheckCircle className="interactive-icon w-6 h-6" />
                                 ) : isOverdue ? (
-                                  <AlertCircle className="w-6 h-6" />
+                                  <AlertCircle className="interactive-icon w-6 h-6" />
                                 ) : (
-                                  <BookOpen className="w-6 h-6" />
+                                  <BookOpen className="interactive-icon w-6 h-6" />
                                 )}
                               </div>
                               <div className="flex-1">
@@ -1069,22 +1080,25 @@ export default function StudentDashboardPage() {
                               </div>
                             </div>
                             <div className="flex flex-col items-end gap-2">
-                              <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                                assignment.status === 'completed' 
-                                  ? 'bg-green-100 text-green-800' 
+                              <span
+                                className={`status-badge px-3 py-1 text-xs font-semibold rounded-full ${
+                                assignment.status === 'completed'
+                                  ? 'bg-green-100 text-green-800'
                                   : assignment.status === 'in_progress'
                                   ? 'bg-blue-100 text-blue-800'
                                   : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {assignment.status === 'completed' ? '🎉 Selesai!' : 
+                                }`}
+                                data-status={assignment.status === 'completed' ? 'completed' : undefined}
+                              >
+                                {assignment.status === 'completed' ? '🎉 Selesai!' :
                                  assignment.status === 'in_progress' ? '🚀 Berlangsung' : '⭐ Belum Mulai'}
                               </span>
                               <Link
                                 href={`/student/assignments/${assignment.id}`}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 group-hover:scale-105 transform"
+                                className="interactive-button bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                               >
                                 {assignment.status === 'completed' ? 'Lihat' : 'Mulai'}
-                                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                                <span className="transition-transform group-hover:translate-x-1">→</span>
                               </Link>
                             </div>
                           </div>
