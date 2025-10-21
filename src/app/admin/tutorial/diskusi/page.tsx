@@ -13,6 +13,10 @@ interface Thread {
   replies: number;
 }
 
+type ApiThread = Omit<Thread, "replies"> & {
+  replies?: Array<{ id: string }> | number;
+};
+
 export default function DiskusiPage() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -25,11 +29,16 @@ export default function DiskusiPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/discussion/threads");
-      const data = await res.json();
+      const data = (await res.json()) as ApiThread[];
       setThreads(
-        data.map((t: any) => ({
-          ...t,
-          replies: t.replies?.length || 0,
+        (Array.isArray(data) ? data : []).map((t) => ({
+          id: t.id,
+          title: t.title,
+          authorId: t.authorId,
+          authorName: t.authorName,
+          content: t.content,
+          createdAt: t.createdAt,
+          replies: Array.isArray(t.replies) ? t.replies.length : Number(t.replies) || 0,
         }))
       );
     } finally {
@@ -116,7 +125,9 @@ export default function DiskusiPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {threads.length === 0 ? (
+                {loading ? (
+                  <tr><td colSpan={5} className="text-center py-8 text-gray-400">Memuat data diskusi...</td></tr>
+                ) : threads.length === 0 ? (
                   <tr><td colSpan={5} className="text-center py-8 text-gray-400">Belum ada thread diskusi.</td></tr>
                 ) : threads.map(thread => (
                   <tr key={thread.id} className="hover:bg-gray-50">

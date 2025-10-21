@@ -51,12 +51,7 @@ export default function AdminTutorialPage() {
     isActive: true
   });
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       const response = await fetch('/api/tutorial/projects');
       if (!response.ok) {
@@ -90,7 +85,11 @@ export default function AdminTutorialPage() {
     } finally {
       setProjectsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   const parseListInput = (value: string) =>
     value
