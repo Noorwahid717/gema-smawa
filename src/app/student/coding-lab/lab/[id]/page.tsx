@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -57,11 +57,7 @@ export default function LabDetailPage() {
   const [lab, setLab] = useState<Lab | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    fetchLabDetail()
-  }, [labId])
-
-  const fetchLabDetail = async () => {
+  const fetchLabDetail = useCallback(async () => {
     try {
       // Mock data for now - in real implementation, this would be API calls
       const mockLab: Lab = {
@@ -305,7 +301,11 @@ export default function LabDetailPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [labId])
+
+  useEffect(() => {
+    fetchLabDetail()
+  }, [fetchLabDetail])
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
