@@ -29,7 +29,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import type { GSAP } from "gsap";
+// gsap exports a default object; avoid importing non-existent 'GSAP' type
 import innovationAnimationData from "@/../public/animations/innovation.json";
 import VideoLogo from "@/components/branding/VideoLogo";
 import AnimatedLogoDemo from "@/components/branding/AnimatedLogoDemo";
@@ -78,6 +78,11 @@ interface GalleryItem {
   category: string;
   description: string;
 }
+
+type GsapModule = typeof import("gsap");
+type GsapCore = GsapModule["gsap"];
+type GsapContext = ReturnType<GsapCore["context"]>;
+type GsapTween = ReturnType<GsapCore["to"]>;
 
 interface Stats {
   totalMembers: number;
@@ -315,15 +320,8 @@ const galleryAccents: AccentPalette[] = [
   },
 ];
 
-type ScrollRevealController = {
-  reveal: (
-    target: string | Element | Element[] | NodeListOf<Element>,
-    config?: Record<string, unknown>,
-  ) => void;
-  clean?: (
-    target?: string | Element | Element[] | NodeListOf<Element>,
-  ) => void;
-};
+// Use a permissive type for ScrollReveal to match the runtime library shape
+type ScrollRevealController = any;
 
 class InteractiveBackgroundBoundary
   extends Component<{ children: ReactNode }, { hasError: boolean }>
@@ -530,7 +528,7 @@ export default function HomePage() {
       return;
     }
 
-    let ctx: GSAP.Context | null = null;
+    let ctx: GsapContext | undefined;
 
     (async () => {
       const { default: gsap } = await import("gsap");
@@ -611,7 +609,7 @@ export default function HomePage() {
       return;
     }
 
-    let context: GSAP.Context | undefined;
+  let context: GsapContext | undefined;
 
     (async () => {
       const { default: gsap } = await import("gsap");
@@ -780,7 +778,7 @@ export default function HomePage() {
     }
 
     let observer: IntersectionObserver | null = null;
-    const animations: GSAP.Tween[] = [];
+  const animations: GsapTween[] = [];
     let hasTriggered = false;
 
     const initAnimation = async () => {
@@ -839,7 +837,7 @@ export default function HomePage() {
       return;
     }
 
-    let animation: GSAP.Tween | null = null;
+  let animation: GsapTween | null = null;
     let isMounted = true;
 
     import("gsap")
@@ -1545,7 +1543,7 @@ export default function HomePage() {
                   Belum ada pengumuman baru. Pantau terus laman ini untuk informasi selanjutnya.
                 </p>
               ) : (
-                latestAnnouncements.map((announcement, index) => {
+                latestAnnouncements.map((announcement) => {
                   const accent = announcementAccentMap[announcement.type] ?? {
                     primary: "#6C63FF",
                     secondary: "#5EEAD4",
