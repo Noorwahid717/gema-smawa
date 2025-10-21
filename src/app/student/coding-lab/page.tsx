@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
+import StudentLayout from '@/components/student/StudentLayout'
 import {
   Code,
   Play,
@@ -51,7 +52,7 @@ interface RecentSubmission {
 }
 
 export default function StudentCodingLab() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const [labs, setLabs] = useState<Lab[]>([])
   const [progress, setProgress] = useState<StudentProgress | null>(null)
   const [recentSubmissions, setRecentSubmissions] = useState<RecentSubmission[]>([])
@@ -182,40 +183,29 @@ export default function StudentCodingLab() {
     }
   }
 
-  if (status === 'loading') {
+  if (status === 'loading' || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <StudentLayout loading={true}>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </StudentLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Coding Lab</h1>
-              <p className="text-gray-600 mt-1">Practice coding with interactive exercises</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/student/dashboard-simple"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                ← Back to Dashboard
-              </Link>
-            </div>
+    <StudentLayout>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Coding Lab</h1>
+            <p className="text-gray-600 mt-1">Practice coding with interactive exercises</p>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Progress Overview */}
-        {progress && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Progress Overview */}
+          {progress && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
               <div className="flex items-center">
                 <Target className="w-8 h-8 text-blue-600 mr-3" />
@@ -259,9 +249,9 @@ export default function StudentCodingLab() {
               </div>
             </div>
           </div>
-        )}
+          )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Available Labs */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md border border-gray-200">
@@ -447,8 +437,9 @@ export default function StudentCodingLab() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </div>
-    </div>
+    </StudentLayout>
   )
 }

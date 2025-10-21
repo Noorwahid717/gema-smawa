@@ -47,7 +47,7 @@ async session({ session, token }) {
 
 ### **2. Enhanced API Error Handling:**
 ```typescript
-// File: src/app/api/classroom/feedback/route.ts
+// File: src/app/api/tutorial/feedback/route.ts
 
 // Validate that student exists in database
 const student = await prisma.student.findUnique({

@@ -1,9 +1,26 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Return roadmap stages data from API
-    const roadmapStages = [
+    // Fetch all active roadmap stages from database
+    const stages = await prisma.classroomProjectChecklist.findMany({
+      where: {
+        isActive: true
+      },
+      orderBy: {
+        order: 'asc'
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      stages
+    });
+
+    // Mock data kept for reference - can be removed later
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    const roadmapStages_OLD = [
       {
         id: "stage-1",
         title: "🔰 Tahap 1: Dasar-dasar Web",
@@ -279,10 +296,12 @@ export async function GET() {
       }
     ];
 
+    /* OLD MOCK DATA - keeping for reference only
     return NextResponse.json({
       success: true,
-      data: roadmapStages
+      data: roadmapStages_OLD
     });
+    */
 
   } catch (error) {
     console.error('Get roadmap stages error:', error);

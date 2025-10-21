@@ -8,7 +8,7 @@ async function testThirdArticle() {
   try {
     // Test 1: Check API endpoint
     console.log('1️⃣ Testing API endpoint...');
-    const apiResponse = await fetch(`${baseUrl}/api/classroom/articles/${articleSlug}`);
+    const apiResponse = await fetch(`${baseUrl}/api/tutorial/articles/${articleSlug}`);
     
     if (apiResponse.ok) {
       const data = await apiResponse.json();
@@ -38,18 +38,18 @@ async function testThirdArticle() {
       console.log(`❌ API Response: ${apiResponse.status}`);
     }
 
-    // Test 2: Check classroom page listing
-    console.log('\n2️⃣ Testing classroom page listing...');
-    const classroomResponse = await fetch(`${baseUrl}/classroom`);
-    if (classroomResponse.ok) {
-      const html = await classroomResponse.text();
+    // Test 2: Check tutorial page listing
+    console.log('\n2️⃣ Testing tutorial page listing...');
+    const tutorialResponse = await fetch(`${baseUrl}/tutorial`);
+    if (tutorialResponse.ok) {
+      const html = await tutorialResponse.text();
       const hasThirdArticle = html.includes('Galeri Foto Responsif yang Bikin Mata Terpukau');
       console.log(`📚 Third article in listing: ${hasThirdArticle}`);
     }
 
     // Test 3: Check article detail page
     console.log('\n3️⃣ Testing article detail page...');
-    const pageResponse = await fetch(`${baseUrl}/classroom/articles/${articleSlug}`);
+    const pageResponse = await fetch(`${baseUrl}/tutorial/articles/${articleSlug}`);
     console.log(`📄 Page Response: ${pageResponse.status}`);
     
     if (pageResponse.ok) {
@@ -59,7 +59,7 @@ async function testThirdArticle() {
 
     // Test 4: Check published articles count
     console.log('\n4️⃣ Testing published articles count...');
-    const allArticlesResponse = await fetch(`${baseUrl}/api/classroom/articles`);
+    const allArticlesResponse = await fetch(`${baseUrl}/api/tutorial/articles`);
     if (allArticlesResponse.ok) {
       const allData = await allArticlesResponse.json();
       const publishedCount = allData.articles?.length || 0;

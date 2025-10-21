@@ -7,24 +7,24 @@ async function testSecondArticle() {
   const baseUrl = 'http://localhost:3000';
   
   try {
-    // Test 1: Check classroom page (artikel listing)
-    console.log('📚 Test 1: Checking classroom page with articles...');
-    const classroomResponse = await fetch(`${baseUrl}/classroom`);
-    console.log(`   Status: ${classroomResponse.status} ${classroomResponse.statusText}`);
+    // Test 1: Check tutorial page (artikel listing)
+    console.log('📚 Test 1: Checking tutorial page with articles...');
+    const tutorialResponse = await fetch(`${baseUrl}/tutorial`);
+    console.log(`   Status: ${tutorialResponse.status} ${tutorialResponse.statusText}`);
     
-    if (classroomResponse.ok) {
-      const classroomHtml = await classroomResponse.text();
-      const hasSecondArticle = classroomHtml.includes('✨ Rahasia CSS yang Bikin Website Kamu Makin Kece!');
+    if (tutorialResponse.ok) {
+      const tutorialHtml = await tutorialResponse.text();
+      const hasSecondArticle = tutorialHtml.includes('✨ Rahasia CSS yang Bikin Website Kamu Makin Kece!');
       console.log(`   ✅ Second article found in listing: ${hasSecondArticle}`);
       
       if (hasSecondArticle) {
-        console.log('   ✅ Article title appears correctly in classroom page');
+        console.log('   ✅ Article title appears correctly in tutorial page');
       }
     }
 
     // Test 2: Check second article detail page
     console.log('\n🎨 Test 2: Checking second article detail page...');
-    const articleResponse = await fetch(`${baseUrl}/classroom/articles/css-styling-dasar-untuk-pemula`);
+    const articleResponse = await fetch(`${baseUrl}/tutorial/articles/css-styling-dasar-untuk-pemula`);
     console.log(`   Status: ${articleResponse.status} ${articleResponse.statusText}`);
     
     if (articleResponse.ok) {
@@ -55,7 +55,7 @@ async function testSecondArticle() {
 
     // Test 3: Check API endpoint for articles
     console.log('\n🔗 Test 3: Checking articles API endpoint...');
-    const apiResponse = await fetch(`${baseUrl}/api/classroom/articles`);
+    const apiResponse = await fetch(`${baseUrl}/api/tutorial/articles`);
     console.log(`   Status: ${apiResponse.status} ${apiResponse.statusText}`);
     
     if (apiResponse.ok) {

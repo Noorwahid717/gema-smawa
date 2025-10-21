@@ -295,12 +295,12 @@ export default function Home() {
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <a
-                href="/classroom"
+                href="/tutorial"
                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center gap-2"
-                aria-label="Masuk ke Classroom GEMA"
+                aria-label="Lihat Tutorial & Sumber Belajar"
               >
                 <BookOpen className="w-5 h-5" />
-                Classroom
+                Tutorial
               </a>
               <a
                 href="/student/login"

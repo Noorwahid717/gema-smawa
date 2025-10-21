@@ -7,7 +7,7 @@ async function simpleTest() {
   try {
     // Test API endpoint
     console.log('1️⃣ Testing API endpoint...');
-    const apiResponse = await fetch(`${baseUrl}/api/classroom/articles/css-styling-dasar-untuk-pemula`);
+    const apiResponse = await fetch(`${baseUrl}/api/tutorial/articles/css-styling-dasar-untuk-pemula`);
     
     if (apiResponse.ok) {
       const data = await apiResponse.json();
@@ -35,7 +35,7 @@ async function simpleTest() {
 
     // Test direct page access
     console.log('\n2️⃣ Testing page access...');
-    const pageResponse = await fetch(`${baseUrl}/classroom/articles/css-styling-dasar-untuk-pemula`);
+    const pageResponse = await fetch(`${baseUrl}/tutorial/articles/css-styling-dasar-untuk-pemula`);
     console.log(`📄 Page Response: ${pageResponse.status}`);
     
     if (pageResponse.ok) {

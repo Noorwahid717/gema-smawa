@@ -18,12 +18,15 @@ import {
   LayoutTemplate,
   ChevronLeft,
   ChevronRight,
-  Code
+  Code,
+  BookOpen,
+  FileText,
+  Sparkles,
+  ClipboardList
 } from 'lucide-react'
 import Image from 'next/image'
 import NotificationPanel from './NotificationPanel'
 import { ToastProvider } from '@/components/feedback/toast'
-import AdminChatPanel from './AdminChatPanel'
 import PageWrapper from '@/components/ui/PageWrapper'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -75,7 +78,11 @@ export default function AdminLayout({ children, loading = false }: AdminLayoutPr
 
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: Home, active: false },
-    { name: 'Chat', href: '/admin/chat', icon: MessageSquare, active: false },
+    { name: 'Asesmen', href: '/admin/asesmen', icon: FileText, active: false },
+    { name: 'Tutorial', href: '/admin/tutorial', icon: BookOpen, active: false },
+    { name: 'Prompt', href: '/admin/tutorial/prompt', icon: Sparkles, active: false },
+    { name: 'Kuis', href: '/admin/tutorial/kuis', icon: ClipboardList, active: false },
+    { name: 'Diskusi', href: '/admin/tutorial/diskusi', icon: MessageSquare, active: false },
     { name: 'Kontak', href: '/admin/contacts', icon: MessageSquare, active: false },
     { name: 'Pendaftaran', href: '/admin/registrations', icon: UserPlus, active: false },
     { name: 'Kegiatan', href: '/admin/activities', icon: Calendar, active: false },
@@ -321,7 +328,6 @@ export default function AdminLayout({ children, loading = false }: AdminLayoutPr
             {/* Right side - Notification and user info */}
             <div className="flex items-center gap-4">
               <NotificationPanel />
-              <AdminChatPanel />
               
               {/* User info - desktop only */}
               <div className="hidden md:flex items-center gap-3">

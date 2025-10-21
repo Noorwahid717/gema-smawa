@@ -7,7 +7,7 @@ async function testFeedbackSystem() {
   try {
     // 1. Test tanpa login (harus gagal)
     console.log('1. Testing feedback tanpa login...');
-    const unauthorizedResponse = await fetch(`${baseUrl}/api/classroom/feedback`, {
+    const unauthorizedResponse = await fetch(`${baseUrl}/api/tutorial/feedback`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ async function testFeedbackSystem() {
 
     // 3. Test API endpoint structure
     console.log('3. Testing API endpoint accessibility...');
-    const optionsResponse = await fetch(`${baseUrl}/api/classroom/feedback`, {
+    const optionsResponse = await fetch(`${baseUrl}/api/tutorial/feedback`, {
       method: 'OPTIONS'
     });
     console.log('API endpoint accessible:', optionsResponse.status !== 404);

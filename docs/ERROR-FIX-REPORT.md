@@ -59,12 +59,12 @@ images: {
 ## 🧪 **Hasil Testing:**
 
 ### ✅ **API Endpoints:**
-- `/api/classroom/articles?status=published` → **200 OK**
-- `/api/classroom/articles/tutorial-kartu-ucapan-interaktif-html-css` → **200 OK**
+- `/api/tutorial/articles?status=published` → **200 OK**
+- `/api/tutorial/articles/tutorial-kartu-ucapan-interaktif-html-css` → **200 OK**
 
 ### ✅ **Frontend Pages:**
-- `/classroom` → **200 OK** (Article list dengan tombol "Baca Artikel")
-- `/classroom/articles/tutorial-kartu-ucapan-interaktif-html-css` → **200 OK** (Full article content)
+- `/tutorial` → **200 OK** (Article list dengan tombol "Baca Artikel")
+- `/tutorial/articles/tutorial-kartu-ucapan-interaktif-html-css` → **200 OK** (Full article content)
 
 ### ✅ **Image Loading:**
 - `https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800&q=80` → **200 OK**
@@ -81,7 +81,7 @@ images: {
 - ✅ Image optimization (WebP, AVIF) tetap aktif
 
 ### 2. **📚 Article Navigation**
-- ✅ Users dapat melihat daftar artikel di `/classroom`
+- ✅ Users dapat melihat daftar artikel di `/tutorial`
 - ✅ Tombol "Baca Artikel" tersedia untuk setiap artikel
 - ✅ Link ke halaman artikel individual berfungsi
 - ✅ Artikel tutorial lengkap dapat diakses dan dibaca

@@ -259,11 +259,11 @@ export default function AdminDashboard() {
                 <span className="text-sm font-medium text-green-900">Lihat Pesan</span>
               </a>
               <a
-                href="/admin/classroom"
+                href="/admin/tutorial"
                 className="interactive-card flex flex-col items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors focus:outline-none"
               >
                 <BookOpen className="interactive-icon w-8 h-8 text-indigo-600 mb-2" />
-                <span className="text-sm font-medium text-indigo-900">Classroom</span>
+                <span className="text-sm font-medium text-indigo-900">Tutorial</span>
               </a>
               <a
                 href="/admin/activities"

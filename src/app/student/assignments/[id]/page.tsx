@@ -63,14 +63,14 @@ export default function StudentAssignmentDetail() {
       setLoading(true)
       
       // Fetch assignment details
-      const assignmentResponse = await fetch(`/api/classroom/assignments/${assignmentId}`)
+      const assignmentResponse = await fetch(`/api/tutorial/assignments/${assignmentId}`)
       if (assignmentResponse.ok) {
         const assignmentData = await assignmentResponse.json()
         setAssignment(assignmentData.data)
       }
 
       // Fetch student submissions for this assignment
-      const submissionsResponse = await fetch(`/api/classroom/submissions?assignmentId=${assignmentId}&studentId=${studentSession.studentId}`)
+      const submissionsResponse = await fetch(`/api/tutorial/submissions?assignmentId=${assignmentId}&studentId=${studentSession.studentId}`)
       if (submissionsResponse.ok) {
         const submissionsData = await submissionsResponse.json()
         setSubmissions(submissionsData.data || [])
@@ -127,7 +127,7 @@ export default function StudentAssignmentDetail() {
       formData.append('assignmentId', assignment.id)
       formData.append('studentId', studentSession.studentId)
 
-      const response = await fetch('/api/classroom/submissions', {
+      const response = await fetch('/api/tutorial/submissions', {
         method: 'POST',
         body: formData
       })

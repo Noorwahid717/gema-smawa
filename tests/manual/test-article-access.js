@@ -5,9 +5,9 @@ const https = require('https');
 const http = require('http');
 
 const testUrls = [
-  'http://localhost:3000/api/classroom/articles?status=published',
-  'http://localhost:3000/api/classroom/articles/tutorial-kartu-ucapan-interaktif-html-css',
-  'http://localhost:3000/classroom/articles/tutorial-kartu-ucapan-interaktif-html-css'
+  'http://localhost:3000/api/tutorial/articles?status=published',
+  'http://localhost:3000/api/tutorial/articles/tutorial-kartu-ucapan-interaktif-html-css',
+  'http://localhost:3000/tutorial/articles/tutorial-kartu-ucapan-interaktif-html-css'
 ];
 
 function testUrl(url) {

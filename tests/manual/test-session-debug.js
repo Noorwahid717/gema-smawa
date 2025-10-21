@@ -15,7 +15,7 @@ async function testSessionAfterLogin() {
 
     // Test artikel endpoint
     console.log('Testing artikel endpoint...');
-    const articleResponse = await fetch(`${baseUrl}/api/classroom/articles/responsive-css-grid-gallery`);
+    const articleResponse = await fetch(`${baseUrl}/api/tutorial/articles/responsive-css-grid-gallery`);
     if (articleResponse.ok) {
       console.log('✅ Article endpoint accessible');
     } else {

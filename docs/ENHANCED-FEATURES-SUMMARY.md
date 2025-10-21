@@ -41,8 +41,8 @@ const relatedProject = DEFAULT_PROJECTS.find(project =>
 - **Database Integration**: Complete feedback storage and analytics
 
 **Code Location**: 
-- Frontend: `src/app/classroom/page.tsx` (lines 137-144, 357-391, 1177-1252)
-- Backend: `src/app/api/classroom/feedback/route.ts`
+- Frontend: `src/app/tutorial/page.tsx` (lines 137-144, 357-391, 1177-1252)
+- Backend: `src/app/api/tutorial/feedback/route.ts`
 - Database: `prisma/schema.prisma` (ArticleFeedback model)
 
 ```tsx
@@ -94,7 +94,7 @@ model Article {
 
 ## 🚀 **API Endpoints**
 
-### Feedback API (`/api/classroom/feedback`)
+### Feedback API (`/api/tutorial/feedback`)
 - **POST**: Submit user feedback and rating
 - **GET**: Retrieve feedback for specific article
 - **Features**: 
@@ -106,7 +106,7 @@ model Article {
 
 ### ✅ **Completed**
 - [x] Visual enhancement with modern UI components
-- [x] Integration with classroom projects and learning paths
+- [x] Integration dengan tutorial projects dan learning paths
 - [x] Complete feedback system implementation
 - [x] Database schema and migrations
 - [x] API endpoints for feedback management

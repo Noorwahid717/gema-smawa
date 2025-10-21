@@ -7,7 +7,7 @@ async function testEnhancedFeatures() {
   try {
     // Test 1: Check published articles
     console.log('1️⃣ Testing published articles...');
-    const articlesResponse = await fetch(`${baseUrl}/api/classroom/articles`);
+    const articlesResponse = await fetch(`${baseUrl}/api/tutorial/articles`);
     
     if (articlesResponse.ok) {
       const data = await articlesResponse.json();
@@ -20,11 +20,11 @@ async function testEnhancedFeatures() {
       });
     }
 
-    // Test 2: Check classroom page with enhanced buttons
-    console.log('\n2️⃣ Testing classroom page with enhanced features...');
-    const classroomResponse = await fetch(`${baseUrl}/classroom`);
-    if (classroomResponse.ok) {
-      const html = await classroomResponse.text();
+    // Test 2: Check tutorial page with enhanced buttons
+    console.log('\n2️⃣ Testing tutorial page with enhanced features...');
+    const tutorialResponse = await fetch(`${baseUrl}/tutorial`);
+    if (tutorialResponse.ok) {
+      const html = await tutorialResponse.text();
       
       const hasGradientButton = html.includes('bg-gradient-to-r from-blue-600 to-purple-600');
       const hasProjectButton = html.includes('Project');
@@ -42,7 +42,7 @@ async function testEnhancedFeatures() {
     // Test 3: Check feedback API endpoint (should return proper structure)
     console.log('\n3️⃣ Testing feedback API structure...');
     try {
-      const feedbackResponse = await fetch(`${baseUrl}/api/classroom/feedback?articleId=test`);
+      const feedbackResponse = await fetch(`${baseUrl}/api/tutorial/feedback?articleId=test`);
       console.log(`📡 Feedback API status: ${feedbackResponse.status}`);
       
       if (feedbackResponse.status === 400) {
@@ -61,13 +61,13 @@ async function testEnhancedFeatures() {
     ];
 
     for (const slug of testSlugs) {
-      const articleResponse = await fetch(`${baseUrl}/api/classroom/articles/${slug}`);
+      const articleResponse = await fetch(`${baseUrl}/api/tutorial/articles/${slug}`);
       if (articleResponse.ok) {
         const articleData = await articleResponse.json();
         const article = articleData.data;
         console.log(`✅ ${article.title}`);
         console.log(`   📈 Views: ${article.views} | 📝 Content: ${article.content.length} chars`);
-        console.log(`   🔗 URL: /classroom/articles/${slug}`);
+        console.log(`   🔗 URL: /tutorial/articles/${slug}`);
       }
     }
 

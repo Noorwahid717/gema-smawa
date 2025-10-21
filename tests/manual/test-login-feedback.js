@@ -13,7 +13,7 @@ async function testStudentLoginAndFeedback() {
     console.log('   - NIS: 2024001');
     console.log('   - Password: student123');
     console.log('3. After successful login, go to:');
-    console.log('   http://localhost:3000/classroom/articles/responsive-css-grid-gallery');
+    console.log('   http://localhost:3000/tutorial/articles/responsive-css-grid-gallery');
     console.log('4. Scroll down to "User Testing & Feedback" section');
     console.log('5. You should see feedback form (not login prompt)');
     console.log('6. Fill the form:');

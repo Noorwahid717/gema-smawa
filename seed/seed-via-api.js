@@ -309,7 +309,7 @@ async function seedClassroomProjects() {
 
   for (const project of roadmapData) {
     try {
-      const response = await fetch('http://localhost:3000/api/classroom/projects', {
+      const response = await fetch('http://localhost:3000/api/tutorial/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

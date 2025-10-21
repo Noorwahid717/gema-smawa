@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { studentAuth } from '@/lib/student-auth'
-import { ArrowLeft, BookOpen } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
+import StudentLayout from '@/components/student/StudentLayout'
 
 interface Assignment {
   id: string
@@ -34,7 +35,7 @@ export default function AssignmentsIndexPage() {
   const fetchAssignments = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/classroom/assignments')
+      const res = await fetch('/api/tutorial/assignments')
       if (!res.ok) {
         throw new Error('Gagal memuat daftar tugas')
       }
@@ -51,33 +52,25 @@ export default function AssignmentsIndexPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat daftar tugas...</p>
+      <StudentLayout>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Memuat daftar tugas...</p>
+          </div>
         </div>
-      </div>
+      </StudentLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/student/dashboard-simple')}
-              className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-              aria-label="Kembali ke dashboard"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-lg font-semibold text-gray-900">Daftar Tugas</h1>
-          </div>
+    <StudentLayout>
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Daftar Tugas</h1>
+          <p className="text-gray-600 mt-1">Kelola dan kerjakan tugas-tugas yang diberikan</p>
         </div>
-      </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
         {error && (
           <div className="mb-4 p-4 bg-red-50 text-red-800 rounded-lg">{error}</div>
         )}
@@ -87,11 +80,6 @@ export default function AssignmentsIndexPage() {
             <BookOpen className="w-10 h-10 text-gray-400 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900">Belum ada tugas</h2>
             <p className="text-gray-600 mt-2">Saat ini tidak ada tugas yang tersedia untukmu.</p>
-            <div className="mt-4">
-              <Link href="/student/dashboard-simple" className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Kembali ke Dashboard
-              </Link>
-            </div>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -117,7 +105,7 @@ export default function AssignmentsIndexPage() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </StudentLayout>
   )
 }

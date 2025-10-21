@@ -79,7 +79,7 @@ async function testRoadmapAssignments() {
     console.log('\n✅ Roadmap assignments test completed successfully!');
     
     console.log('\n🎯 Next Steps:');
-    console.log('1. Check assignments in classroom dashboard');
+    console.log('1. Check assignments in tutorial dashboard');
     console.log('2. Test assignment submission as student');
     console.log('3. Verify instructions dan targets are clear');
     console.log('4. Confirm file type restrictions work');

@@ -53,7 +53,7 @@ Roadmap pembelajaran terdiri dari 6 tahap yang terstruktur dari dasar hingga adv
 
 ## 📚 **2. ASSIGNMENTS/TUGAS**
 
-### **API Endpoint:** `/api/classroom/assignments`
+### **API Endpoint:** `/api/tutorial/assignments`
 **Method:** GET, POST
 
 ### **Seed Endpoint:** `/api/seed/assignments`
@@ -171,7 +171,7 @@ curl http://localhost:3000/api/roadmap/stages
 
 #### **4. Verify Assignments:**
 ```bash
-curl http://localhost:3000/api/classroom/assignments
+curl http://localhost:3000/api/tutorial/assignments
 ```
 
 ---

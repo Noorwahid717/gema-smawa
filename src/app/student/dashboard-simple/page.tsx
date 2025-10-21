@@ -223,7 +223,7 @@ export default function StudentDashboardPage() {
     try {
       setAssignmentsLoading(true)
 
-      const response = await fetch('/api/classroom/assignments')
+      const response = await fetch('/api/tutorial/assignments')
       const result = response.ok ? await response.json() : null
       const assignmentsPayload: Assignment[] = 
         result?.success && Array.isArray(result.data) ? result.data : []

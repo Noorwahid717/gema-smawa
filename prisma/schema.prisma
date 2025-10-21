@@ -1,3 +1,35 @@
+model DiscussionThread {
+  id          String   @id @default(cuid())
+  title       String
+  authorId    String // Admin or Student ID
+  authorName  String
+  content     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  replies     DiscussionReply[]
+
+  @@index([authorId])
+  @@map("discussion_threads")
+}
+
+model DiscussionReply {
+  id          String   @id @default(cuid())
+  threadId    String
+  authorId    String // Admin or Student ID
+  authorName  String
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  thread      DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+  @@index([authorId])
+  @@map("discussion_replies")
+}
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
