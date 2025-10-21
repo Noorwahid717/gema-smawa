@@ -1,17 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Fira_Code } from "next/font/google";
 import { AppSessionProvider } from "@/components/providers/AppSessionProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
 import PageTransition from "@/components/ui/PageTransition";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-poppins",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const firaCode = Fira_Code({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-fira-code",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -82,11 +87,13 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${poppins.variable} ${firaCode.variable} antialiased`}
       >
-        <AppSessionProvider>
-          <PageTransition>{children}</PageTransition>
-        </AppSessionProvider>
+        <ThemeProvider>
+          <AppSessionProvider>
+            <PageTransition>{children}</PageTransition>
+          </AppSessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
