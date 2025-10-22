@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import AdminLayout from '@/components/admin/AdminLayout';
 import { MessageSquare, Plus, Edit, Trash2 } from 'lucide-react';
+
 
 interface Thread {
   id: string;
@@ -13,11 +14,7 @@ interface Thread {
   replies: number;
 }
 
-type ApiThread = Omit<Thread, "replies"> & {
-  replies?: Array<{ id: string }> | number;
-};
-
-export default function DiskusiPage() {
+export default function AdminDiskusiPage() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingThread, setEditingThread] = useState<Thread | null>(null);
@@ -29,16 +26,11 @@ export default function DiskusiPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/discussion/threads");
-      const data = (await res.json()) as ApiThread[];
+      const data = await res.json();
       setThreads(
-        (Array.isArray(data) ? data : []).map((t) => ({
-          id: t.id,
-          title: t.title,
-          authorId: t.authorId,
-          authorName: t.authorName,
-          content: t.content,
-          createdAt: t.createdAt,
-          replies: Array.isArray(t.replies) ? t.replies.length : Number(t.replies) || 0,
+        data.map((t: Thread & { replies?: unknown[] }) => ({
+          ...t,
+          replies: Array.isArray(t.replies) ? t.replies.length : 0,
         }))
       );
     } finally {
@@ -125,9 +117,7 @@ export default function DiskusiPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {loading ? (
-                  <tr><td colSpan={5} className="text-center py-8 text-gray-400">Memuat data diskusi...</td></tr>
-                ) : threads.length === 0 ? (
+                {threads.length === 0 ? (
                   <tr><td colSpan={5} className="text-center py-8 text-gray-400">Belum ada thread diskusi.</td></tr>
                 ) : threads.map(thread => (
                   <tr key={thread.id} className="hover:bg-gray-50">

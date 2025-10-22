@@ -1,32 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
-
-const getThread = async (threadId: string) => {
+// GET: Get a single thread by ID
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const thread = await prisma.discussionThread.findUnique({
-    where: { id: threadId },
+    where: { id },
     include: { replies: true },
   });
-
-  if (!thread) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
-
+  if (!thread) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(thread);
-};
-
-// GET: Get a single thread by ID
-export async function GET(_req: NextRequest, context: RouteContext) {
-  const { id } = await context.params;
-  return getThread(id);
 }
 
 // PUT: Update a thread
-export async function PUT(req: NextRequest, context: RouteContext) {
-  const { id } = await context.params;
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { title, content } = await req.json();
   const thread = await prisma.discussionThread.update({
     where: { id },
@@ -36,8 +24,8 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 }
 
 // DELETE: Delete a thread
-export async function DELETE(_req: NextRequest, context: RouteContext) {
-  const { id } = await context.params;
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   await prisma.discussionThread.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

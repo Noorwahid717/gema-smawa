@@ -33,7 +33,7 @@ interface ProjectFormState {
   isActive: boolean;
 }
 
-export default function AdminTutorialPage() {
+export default function AdminClassroomPage() {
   const [projects, setProjects] = useState<TutorialProjectChecklistItem[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [projectError, setProjectError] = useState<string | null>(null);
@@ -51,7 +51,12 @@ export default function AdminTutorialPage() {
     isActive: true
   });
 
-  const fetchProjects = useCallback(async () => {
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+
+  const fetchProjects = async () => {
     try {
       const response = await fetch('/api/tutorial/projects');
       if (!response.ok) {
@@ -65,7 +70,7 @@ export default function AdminTutorialPage() {
           : null;
 
       if (data.success && Array.isArray(data.data)) {
-        const normalized = (data.data as TutorialProjectChecklistItem[]).sort((a, b) => {
+  const normalized = (data.data as TutorialProjectChecklistItem[]).sort((a, b) => {
           if (a.order !== b.order) {
             return (a.order ?? 0) - (b.order ?? 0);
           }
@@ -79,17 +84,13 @@ export default function AdminTutorialPage() {
         setProjectError(metaMessage ?? 'Gagal memuat checklist proyek.');
       }
     } catch (error) {
-      console.error('Error fetching tutorial projects:', error);
+      console.error('Error fetching classroom projects:', error);
       setProjectError('Terjadi kesalahan saat memuat checklist proyek.');
       setProjects([]);
     } finally {
       setProjectsLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+  };
 
   const parseListInput = (value: string) =>
     value
@@ -247,7 +248,7 @@ export default function AdminTutorialPage() {
               <div className="flex items-center gap-3">
                 <BookOpen className="w-8 h-8 text-blue-600" />
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800">Tutorial Management</h1>
+                  <h1 className="text-2xl font-bold text-gray-800">Classroom Management</h1>
                   <p className="text-sm text-gray-600">Kelola tugas dan submisi siswa</p>
                 </div>
               </div>
@@ -572,3 +573,4 @@ export default function AdminTutorialPage() {
     </AdminLayout>
   );
 }
+

@@ -415,7 +415,7 @@ export default function AdminAssessmentPage() {
                       <div className="space-y-2">
                         <h3 className="font-semibold text-gray-800">Instructions</h3>
                         <ul className="list-disc list-inside text-gray-600 space-y-1">
-                          {selectedAssignment.instructions.map((instruction, index) => (
+                          {selectedAssignment.instructions.map((instruction: string, index: number) => (
                             <li key={index}>{instruction}</li>
                           ))}
                         </ul>

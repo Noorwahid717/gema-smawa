@@ -321,6 +321,7 @@ const galleryAccents: AccentPalette[] = [
 ];
 
 // Use a permissive type for ScrollReveal to match the runtime library shape
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ScrollRevealController = any;
 
 class InteractiveBackgroundBoundary
