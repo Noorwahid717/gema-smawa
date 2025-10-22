@@ -17,8 +17,8 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:seed-tutorials": "npx tsx prisma/seed-tutorial-articles.ts",
-    "db:seed-classroom": "npx tsx prisma/seed-classroom.ts",
+    "db:seed-tutorials": "npx tsx seed/seed-tutorial-articles.ts",
+    "db:seed-classroom": "npx tsx seed/seed-classroom.ts",
     "db:update-first-tutorial": "npx tsx prisma/update-first-tutorial.ts",
     "db:migrate": "bash migrate-to-postgres.sh",
     "vercel:force-deploy": "vercel --prod --force",
@@ -78,5 +78,8 @@
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx seed/seed.ts"
   }
 }

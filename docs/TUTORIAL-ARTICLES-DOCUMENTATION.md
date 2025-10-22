@@ -13,7 +13,7 @@ Dokumentasi ini menjelaskan sistem seeding artikel tutorial yang telah dibuat be
 npm run db:seed-tutorials
 
 # Atau langsung menggunakan tsx
-npx tsx prisma/seed-tutorial-articles.ts
+npx tsx seed/seed-tutorial-articles.ts
 
 # Atau menggunakan bash script (Linux/Mac)
 bash scripts/seed-tutorial-articles.sh

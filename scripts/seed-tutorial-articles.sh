@@ -26,7 +26,7 @@ echo ""
 echo "📚 Seeding tutorial articles based on classroom roadmap..."
 echo "========================================================="
 
-if npx tsx prisma/seed-tutorial-articles.ts; then
+if npx tsx seed/seed-tutorial-articles.ts; then
     echo ""
     echo "🎉 Tutorial articles seeding completed successfully!"
     echo ""

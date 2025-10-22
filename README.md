@@ -1,250 +1,114 @@
 # GEMA - Generasi Muda Informatika
 
-W## 🔧 Tech Stack
+GEMA (Generasi Muda Informatika) adalah platform pembelajaran terpadu yang dikembangkan untuk SMA Wahidiyah Kediri. Proyek ini menggabungkan landing page publik, panel admin, dan dashboard siswa ke dalam satu aplikasi Next.js sehingga seluruh aktivitas pembelajaran dapat dikelola secara terpusat.
 
--## 🔐 Login Credentials
+## 🔧 Tech Stack
+- **Framework**: Next.js 15 (App Router) & React 19
+- **Bahasa**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **Database**: Prisma ORM dengan dukungan SQLite/PostgreSQL
+- **Authentication**: NextAuth.js untuk admin + JWT kustom untuk siswa
+- **Utilities**: Framer Motion, Lucide Icons, dan Playwright untuk E2E testing
 
-### Admin Login
-Setelah seeding databa## 🌐 Multi-Platform Access
-
-### 📱 Responsive Design
-- **Mobile First**: Optimized untuk mobile devices
-- **Tablet Support**: Layout menyesuaikan tablet
-- **Desktop**: Full experience di desktop
-- **Cross-Platform**: Konsisten di semua perangkat
-
-### 🎨 User Experience
-- **Joyful Student Interface**: Colorful dan engaging design untuk siswa
-- **Professional Admin Interface**: Clean dan functional design untuk admin
-- **Smooth Animations**: Framer Motion untuk transition yang halus
-- **Intuitive Navigation**: Easy-to-use navigation dengan profile access
-
-### 🔐 Security & Performance
-- **Secure Authentication**: Multi-level authentication system
-- **Session Management**: Proper session handling untuk admin dan student
-- **Optimized Build**: Production-ready dengan bundle optimization
-- **Database Integration**: Seamless integration dengan Prisma ORM
-
-## 🚀 Quick Start
-
+## 🚀 Memulai Proyek
 1. **Clone Repository**
-```bash
-git clone https://github.com/Noorwahid717/gema-smawa.git
-cd gema-smawa
-```
+   ```bash
+   git clone https://github.com/Noorwahid717/gema-smawa.git
+   cd gema-smawa
+   ```
 
 2. **Install Dependencies**
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
-3. **Setup Database**
-```bash
-npx prisma generate
-npx prisma db push
-```
+3. **Konfigurasi Environment**
+   - Salin `.env.example` menjadi `.env`
+   - Lengkapi seluruh variabel yang dibutuhkan (database URL, auth secret, dsb.)
+   - Jalankan `./scripts/verify-env.sh` untuk memastikan konfigurasi sudah lengkap
 
-4. **Run Development Server**
-```bash
-npm run dev
-```
+4. **Persiapan Database**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
 
-5. **Access Applications**
-- Landing Page: `http://localhost:3000`
-- Admin Panel: `http://localhost:3000/admin/login`
-- Student Dashboard: `http://localhost:3000/student/login`nakan credentials berikut:
+5. **Seed Data**
+   Seluruh skrip seed kini berada di folder `seed/`.
+   - Seed default: `npm run db:seed` → mengeksekusi `tsx seed/seed.ts`
+   - Tutorial articles: `npm run db:seed-tutorials`
+   - Classroom & assignments: `npm run db:seed-classroom`
+   - Skrip tambahan dapat dijalankan dengan `npx tsx seed/<nama-file>.ts`
 
-**Super Admin:**
+6. **Jalankan Development Server**
+   ```bash
+   npm run dev
+   ```
+
+7. **Akses Aplikasi**
+   - Landing Page: http://localhost:3000
+   - Admin Panel: http://localhost:3000/admin/login
+   - Student Dashboard: http://localhost:3000/student/login
+
+## 🧭 Alur Penggunaan Aplikasi
+1. **Calon pengguna membuka landing page** untuk membaca profil sekolah, program unggulan, agenda kegiatan, dan testimoni. CTA seperti "Daftar Sekarang" atau "Masuk" mengarahkan pengunjung ke langkah berikutnya.
+2. **Siswa baru mendaftar atau mengisi formulir minat** (sesuai kampanye yang sedang berjalan). Data pendaftaran otomatis tercatat di database untuk ditinjau admin.
+3. **Admin melakukan login** memakai kredensial yang terdaftar, kemudian meninjau data pendaftar, memvalidasi akun siswa, dan menyiapkan struktur kelas (kelas, mata pelajaran, jadwal, dan guru pengampu).
+4. **Admin mengelola konten dan aktivitas** dengan membuat pengumuman, materi, tugas, serta artikel tutorial. Seluruh konten ini akan tampil di dashboard siswa maupun landing page publik (untuk konten yang bersifat umum).
+5. **Siswa menerima akun yang sudah divalidasi**, login melalui halaman student dashboard, kemudian melengkapi profil, bergabung ke kelas, mengunduh materi, dan mengerjakan tugas yang dijadwalkan.
+6. **Interaksi pembelajaran berlangsung** melalui fitur chat, progress tracker, dan update status tugas. Admin maupun guru dapat memantau perkembangan siswa dan memberikan feedback secara langsung dari panel admin.
+
+## 🧪 Kualitas Kode & Testing
+Pastikan pipeline kualitas berjalan berurutan:
+1. `npm run lint`
+2. `npm run test:e2e`
+3. `npm run build`
+
+Playwright membutuhkan browser binaries; jalankan `npx playwright install` bila belum tersedia.
+
+## 🔐 Kredensial Demo
+**Super Admin**
 - Email: `admin@smawahidiyah.edu`
 - Password: `admin123`
 
-**Regular Admin:**
+**Regular Admin**
 - Email: `gema@smawahidiyah.edu`
 - Password: `admin123`
 
-### Student Login
-**Demo Student:**
+**Demo Student**
 - Student ID: `2024001`
 - Password: `student123`
 
-**Akses Student:**
-- Student Dashboard: `/student/dashboard-simple`
-- Student Login: `/student/login`
-- Student Registration: `/student/register`**: Next.js 15, React 19, TypeScript
-- **Styling**: Tailwind CSS 4
-- **Database**: SQLite/PostgreSQL + Prisma ORM
-- **Authentication**: 
-  - NextAuth.js untuk Admin
-  - Custom JWT untuk Student Authentication
-- **Security**: bcryptjs untuk password hashing
-- **Animation**: Framer Motion
-- **Icons**: Lucide React
-- **File Upload**: Built-in file handling system
-esmi program GEMA (Generasi Muda Informatika) SMA Wahidiyah Kediri yang memadukan **Landing Page**, **Admin Panel**, dan **Student Dashboard** yang terintegrasi penuh untuk manajemen pembelajaran digital.
-
-## 🌟 Fitur Utama
-
-### 🎨 Landing Page
-- **Hero Section** dengan statistik real-time dari database
-- **Pengumuman Terbaru** langsung dari admin panel
-- **Kegiatan Mendatang** dengan informasi detail
-- **Galeri Kegiatan** yang dapat dikelola admin
-- **Form Pendaftaran** terintegrasi dengan admin panel
-- **Responsive Design** untuk semua perangkat
-
-### 🛠️ Admin Panel
-- **Dashboard** dengan overview dan statistik
-- **Profile Management** - kelola informasi personal, password, dan preferensi
-- **Kelola Kontak** - lihat dan respon pesan masuk
-- **Kelola Pendaftaran** - approve/reject pendaftaran siswa
-- **Kelola Kegiatan** - CRUD kegiatan dan workshop
-- **Kelola Galeri** - upload dan kategorisasi foto
-- **Kelola Pengumuman** - buat dan publikasi pengumuman
-- **Kelola Siswa** - student management dan monitoring
-- **Live Chat** - real-time communication dengan siswa
-- **Classroom Management** - artikel tutorial dan assignment
-- **Portfolio Management** - evaluasi portfolio siswa
-- **Kelola Admin** - user management dengan role-based access
-- **Pengaturan Sistem** - konfigurasi aplikasi
-
-### 👨‍🎓 Student Dashboard
-- **Dashboard Interaktif** dengan progress tracking dan gamification
-- **Profile Management** - kelola informasi personal, password, dan preferensi
-- **Assignment System** - upload tugas dan lihat feedback
-- **Portfolio Builder** - buat dan submit portfolio web
-- **Classroom** - akses artikel tutorial dan materi pembelajaran
-- **Roadmap Learning** - tracking progress pembelajaran dengan visual roadmap
-- **Real-time Chat** - komunikasi dengan admin dan mentor
-- **Progress Analytics** - statistik pembelajaran dan engagement
-
-## � Tech Stack
-
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **Styling**: Tailwind CSS 4
-- **Database**: SQLite + Prisma ORM
-- **Authentication**: NextAuth.js dengan Credentials Provider
-- **Animation**: Framer Motion
-- **Icons**: Lucide React
-
-## � Login Admin
-
-Setelah seeding database, gunakan credentials berikut:
-
-**Super Admin:**
-- Email: `admin@smawahidiyah.edu`
-- Password: `admin123`
-
-**Regular Admin:**
-- Email: `gema@smawahidiyah.edu`
-- Password: `admin123`
-
-## 🎯 Fitur Unggulan
-
-### 🔄 Sinkronisasi Real-time
-- **Statistik Hero Section**: Menampilkan jumlah pendaftar, kegiatan aktif, dll dari database
-- **Pengumuman**: Langsung dari admin panel, hanya yang dipublikasi yang tampil
-- **Kegiatan**: Kegiatan aktif dari admin panel ditampilkan di landing page
-- **Galeri**: Foto yang diupload admin langsung muncul di landing page
-
-### 📝 Assignment & Portfolio System
-- **Assignment Upload**: Siswa dapat upload tugas dalam berbagai format
-- **Portfolio Builder**: Drag & drop interface untuk membuat portfolio web
-- **Real-time Preview**: Live preview untuk portfolio development
-- **Automated Evaluation**: Sistem penilaian dengan rubrik yang dapat dikustomisasi
-- **Feedback System**: Rating dan komentar untuk artikel tutorial
-
-### 💬 Communication System
-- **Live Chat**: Real-time communication antara siswa dan admin
-- **Multi-Chat Sessions**: Admin dapat handle multiple chat sessions
-- **Chat History**: Penyimpanan riwayat percakapan
-- **Notification System**: Real-time notifications untuk chat dan updates
-
-### 📊 Analytics & Gamification
-- **Progress Tracking**: Visual roadmap pembelajaran dengan progress indicators
-- **Engagement Score**: Sistem scoring berdasarkan aktivitas siswa
-- **Learning Streak**: Tracking konsistensi belajar siswa
-- **Interactive Dashboard**: Dashboard yang engaging dengan animasi dan statistik
-
-### 👤 Profile Management System
-- **Admin Profile**: Complete profile management dengan password security
-- **Student Profile**: Personal information, preferences, dan password management
-- **Role-based Access**: Different interfaces berdasarkan user role
-- **Security Features**: Password hashing, validation, dan session management
-
-## � Responsive Design
-
-- **Mobile First**: Optimized untuk mobile devices
-- **Tablet Support**: Layout menyesuaikan tablet
-- **Desktop**: Full experience di desktop
-- **Admin Panel**: Responsive admin interface
-
-## � Project Structure
-
+## 🗂️ Struktur Proyek Singkat
 ```
-gema-smawa/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── admin/              # Admin Panel Pages
-│   │   │   ├── profile/        # Admin Profile Management
-│   │   │   ├── dashboard/      # Admin Dashboard
-│   │   │   ├── chat/           # Live Chat Management
-│   │   │   └── ...
-│   │   ├── student/            # Student Pages
-│   │   │   ├── profile/        # Student Profile Management
-│   │   │   ├── dashboard-simple/ # Student Dashboard
-│   │   │   ├── portfolio/      # Portfolio Builder
-│   │   │   └── ...
-│   │   ├── classroom/          # Learning Management
-│   │   ├── api/                # API Routes
-│   │   └── ...
-│   ├── components/             # Reusable Components
-│   │   ├── admin/              # Admin Components
-│   │   ├── portfolio/          # Portfolio Components
-│   │   ├── feedback/           # Feedback System
-│   │   └── ...
-│   ├── lib/                    # Utilities & Configurations
-│   └── types/                  # TypeScript Definitions
-├── prisma/                     # Database Schema & Seeds
-└── public/                     # Static Assets
+├── seed/                 # Seluruh skrip seeding TypeScript & helper JS
+├── prisma/               # Schema, migrasi, dan utilitas pembaruan data
+├── src/app/              # Next.js App Router pages & route handlers
+├── src/components/       # Komponen UI bersama
+├── src/features/         # Modul domain dan logika fitur
+├── tests/                # Playwright E2E tests & fixtures
+├── scripts/              # Shell utilities (seed helper, verifikasi env, dst.)
+└── public/               # Asset statis
 ```
 
-## 🏆 Features Completed
+## 🌟 Fitur Utama (Pembaruan Terakhir)
+Pembaruan struktur proyek dan dokumentasi terbaru menegaskan kembali fokus aplikasi pada pengalaman belajar end-to-end. Berikut ringkasan fitur yang sudah dapat dicoba di lingkungan lokal setelah menjalankan skrip seed terkini:
 
-### ✅ Core System
-- [x] **Landing Page** dengan integrasi database
-- [x] **Admin Authentication** dengan NextAuth
-- [x] **Student Authentication** dengan custom JWT
-- [x] **Profile Management** untuk Admin dan Student
-- [x] **Responsive Design** di semua platform
+### Landing Page Dinamis Berbasis Data
+- Menarik statistik siswa, agenda, dan konten promosi langsung dari database sehingga informasi publik selalu mutakhir.
+- Animasi Framer Motion dan dukungan Tailwind CSS 4 memastikan tampilan responsif yang konsisten di berbagai perangkat.
 
-### ✅ Learning Management
-- [x] **Assignment System** dengan file upload
-- [x] **Portfolio Builder** dengan live preview
-- [x] **Tutorial Articles** dengan feedback system
-- [x] **Progress Tracking** dengan visual roadmap
-- [x] **Evaluation System** dengan rubrik customizable
+### Panel Admin Terpadu
+- Admin dapat memverifikasi pendaftar, mengatur kelas, membuat pengumuman, serta menerbitkan artikel tutorial terbaru yang kini dikelola lewat folder `seed/` terpusat.
+- Integrasi NextAuth.js menjamin autentikasi berlapis sebelum admin mengakses manajemen konten, tugas, dan galeri.
 
-### ✅ Communication
-- [x] **Live Chat System** real-time
-- [x] **Multi-Chat Management** untuk admin
-- [x] **Notification System** dengan SSE
-- [x] **Feedback & Rating** untuk konten
+### Dashboard Siswa Interaktif
+- Siswa memantau roadmap pembelajaran, mengunduh materi, serta mengumpulkan tugas dengan notifikasi status real-time.
+- Fitur chat internal dan progress tracker membantu guru memberikan umpan balik langsung berdasarkan data hasil seeding terbaru.
 
-### ✅ Analytics & Gamification
-- [x] **Interactive Dashboard** dengan statistik
-- [x] **Engagement Scoring** system
-- [x] **Learning Streak** tracking
-- [x] **Progress Visualization** dengan animasi
+### Automasi Data & Kualitas
+- Seluruh skrip pengisian data (default, tutorial, maupun classroom) kini berada di `seed/`, memudahkan orkestrasi data uji dan demo.
+- Pipeline kualitas (lint → Playwright tests → build) terdokumentasi jelas agar tim dapat menjaga standar kode dan siap CI/CD.
 
-## �📞 Contact & Support
-
-- **Email**: smaswahidiyah@gmail.com
-- **Website**: https://spmbkedunglo.com
-- **Instagram**: [@smawahidiyah_official](https://instagram.com/smawahidiyah_official)
-- **Developer**: Noorwahid717
-
----
-
-🎉 **GEMA Platform: Complete Learning Management System dengan Admin Panel dan Student Dashboard yang terintegrasi penuh!**
-
-💡 **Ready untuk deployment dan penggunaan production di SMA Wahidiyah Kediri**
+## 📄 Lisensi
+Proyek ini ditujukan untuk kebutuhan internal SMA Wahidiyah Kediri. Hubungi maintainer untuk detail penggunaan lebih lanjut.

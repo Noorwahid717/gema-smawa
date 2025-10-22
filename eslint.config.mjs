@@ -27,6 +27,7 @@ const eslintConfig = [
       "*.mjs",
       "scripts/**/*.js",
       "tests/**/*.js",
+      "seed/**/*.js",
     ],
     rules: {
       "@typescript-eslint/no-require-imports": "off",
