@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { studentAuth } from '@/lib/student-auth'
 import { BookOpen } from 'lucide-react'
 import StudentLayout from '@/components/student/StudentLayout'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 interface Assignment {
   id: string
@@ -66,6 +67,11 @@ export default function AssignmentsIndexPage() {
   return (
     <StudentLayout>
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Breadcrumb */}
+        <div className="mb-4">
+          <Breadcrumb items={[{ label: 'Daftar Tugas' }]} />
+        </div>
+
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Daftar Tugas</h1>
           <p className="text-gray-600 mt-1">Kelola dan kerjakan tugas-tugas yang diberikan</p>

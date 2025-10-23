@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 import {
   ArrowLeft,
   Code,
@@ -358,6 +359,10 @@ export default function LabDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
+              {/* Breadcrumb */}
+              <div className="mb-4">
+                <Breadcrumb items={[{ label: 'Coding Lab', href: '/student/coding-lab' }, { label: lab?.title || 'Lab' }]} />
+              </div>
               <Link
                 href="/student/coding-lab"
                 className="text-gray-600 hover:text-gray-900 flex items-center"

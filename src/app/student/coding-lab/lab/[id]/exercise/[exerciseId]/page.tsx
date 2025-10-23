@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 import {
   ArrowLeft,
   Code,
@@ -336,6 +337,15 @@ export default function ExerciseDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Breadcrumb
+          items={[
+            { label: 'Coding Lab', href: '/student/coding-lab' },
+            { label: 'Lab', href: `/student/coding-lab/lab/${labId}` },
+            { label: exercise?.title || 'Exercise' }
+          ]}
+        />
+      </div>
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
