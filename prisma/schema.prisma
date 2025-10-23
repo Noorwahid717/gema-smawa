@@ -188,7 +188,7 @@ model Assignment {
   maxSubmissions   Int      @default(30)
   status           String   @default("active") // active, closed, upcoming
   instructions     String? // JSON array of instructions
-  allowedFileTypes String? // Comma separated file extensions
+  allowedFileTypes String   @default("pdf,doc,docx") // Document types only
   maxFileSize      Int      @default(10485760) // 10MB in bytes
   createdBy        String // Admin ID
   createdAt        DateTime @default(now())
@@ -211,6 +211,8 @@ model Submission {
   filePath         String // Cloud storage URL or local path
   fileSize         Int
   mimeType         String
+  documentType     String? // pdf, doc, docx for document submissions
+  previewUrl       String? // URL for document preview/thumbnail
   submittedAt      DateTime  @default(now())
   status           String    @default("submitted") // submitted, late, reviewed, graded
   grade            Float? // Grade if applicable

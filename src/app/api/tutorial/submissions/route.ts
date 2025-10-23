@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validasi file size (10MB)
+    // Validasi file size (10MB for documents)
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
         { error: 'File size too large. Maximum 10MB allowed.' },
@@ -83,67 +83,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validasi file type - Extended untuk web development
+    // Validasi file type - Hanya dokumen (PDF, DOC, DOCX)
     const allowedTypes = [
-      // Documents
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain',
-      
-      // Archives
-      'application/zip',
-      'application/x-rar-compressed',
-      'application/x-zip-compressed',
-      'application/x-tar',
-      'application/gzip',
-      
-      // Images
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'image/svg+xml',
-      'image/webp',
-      
-      // Web Development Files
-      'text/html',
-      'text/css',
-      'text/javascript',
-      'application/javascript',
-      'application/json',
-      'text/xml',
-      'application/xml',
-      
-      // Programming Files
-      'text/x-python',
-      'application/x-python-code',
-      'text/x-java-source',
-      'text/x-c',
-      'text/x-c++',
-      'text/x-php',
-      'application/x-php',
-      
-      // Other common types
-      'text/markdown',
-      'application/octet-stream' // For files without proper MIME type
     ];
 
-    // Additional check for file extensions if MIME type is not reliable
+    // File extension validation
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const allowedExtensions = [
-      'pdf', 'doc', 'docx', 'txt', 'zip', 'rar', '7z', 'tar', 'gz',
-      'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp',
-      'html', 'htm', 'css', 'js', 'json', 'xml',
-      'py', 'java', 'c', 'cpp', 'h', 'hpp', 'php',
-      'md', 'readme', 'yml', 'yaml', 'env', 'gitignore'
-    ];
+    const allowedExtensions = ['pdf', 'doc', 'docx'];
 
     if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension || '')) {
       return NextResponse.json(
-        { error: 'File type not allowed. Supported: HTML, CSS, JS, Python, Java, ZIP, PDF, images, and more.' },
+        { error: 'File type not allowed. Only PDF, DOC, and DOCX files are accepted for assignment submissions.' },
         { status: 400 }
       );
+    }
+
+    // Determine document type
+    let documentType = 'pdf';
+    if (fileExtension === 'doc' || file.type === 'application/msword') {
+      documentType = 'doc';
+    } else if (fileExtension === 'docx' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      documentType = 'docx';
     }
 
     // Convert file to buffer untuk Cloudinary
@@ -186,6 +149,8 @@ export async function POST(request: NextRequest) {
         filePath: cloudinaryResult.secure_url,
         fileSize: file.size,
         mimeType: file.type,
+        documentType,
+        previewUrl: cloudinaryResult.secure_url, // Same as filePath for direct viewing
         status: isLate ? 'late' : 'submitted',
         isLate,
         submittedAt: now,

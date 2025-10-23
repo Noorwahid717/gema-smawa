@@ -365,22 +365,25 @@ export default function StudentAssignmentDetail() {
             <div className="mb-4">
               <label htmlFor="file-upload" className="cursor-pointer">
                 <span className="text-blue-600 hover:text-blue-700 font-medium">
-                  Pilih file untuk diupload
+                  Pilih dokumen untuk diupload
                 </span>
                 <input
                   id="file-upload"
                   type="file"
                   className="hidden"
                   onChange={handleFileSelect}
-                  accept=".pdf,.doc,.docx,.zip,.rar"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 />
               </label>
               <p className="text-gray-500 text-sm mt-1">
-                Atau drag & drop file di sini
+                Atau drag & drop dokumen di sini
               </p>
             </div>
             <p className="text-xs text-gray-400">
-              Maksimal 10MB. Format: PDF, DOC, DOCX, ZIP, RAR
+              Maksimal 10MB. Format dokumen: PDF, DOC, DOCX
+            </p>
+            <p className="text-xs text-blue-600 mt-2">
+              ✓ Dokumen dapat langsung ditinjau oleh admin tanpa perlu download
             </p>
           </div>
 

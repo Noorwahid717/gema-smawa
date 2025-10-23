@@ -142,13 +142,42 @@ export default function AdminAssessmentPage() {
     }
   };
 
+  const handlePreviewSubmission = async (submissionId: string) => {
+    try {
+      const response = await fetch(`/api/tutorial/submissions/${submissionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data.previewUrl) {
+          // Open document in new tab for preview
+          window.open(data.data.previewUrl, '_blank');
+        } else if (data.success && data.data.filePath) {
+          // Fallback to filePath if previewUrl not available
+          window.open(data.data.filePath, '_blank');
+        } else {
+          alert("File tidak ditemukan!");
+        }
+      } else {
+        alert("Terjadi kesalahan saat membuka dokumen!");
+      }
+    } catch (error) {
+      console.error('Error previewing document:', error);
+      alert("Terjadi kesalahan saat membuka dokumen!");
+    }
+  };
+
   const handleDownloadSubmission = async (submissionId: string) => {
     try {
       const response = await fetch(`/api/tutorial/submissions/${submissionId}`);
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.data.downloadUrl) {
-          window.open(data.data.downloadUrl, '_blank');
+        if (data.success && data.data.filePath) {
+          // Force download
+          const link = document.createElement('a');
+          link.href = data.data.filePath;
+          link.download = data.data.originalFileName || 'submission';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         } else {
           alert("File tidak ditemukan!");
         }
@@ -486,13 +515,22 @@ export default function AdminAssessmentPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <button
-                              onClick={() => handleDownloadSubmission(submission.id)}
-                              className="text-blue-600 hover:text-blue-900 p-1 rounded"
-                              title="Download file"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handlePreviewSubmission(submission.id)}
+                                className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                                title="Preview dokumen"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDownloadSubmission(submission.id)}
+                                className="text-green-600 hover:text-green-900 p-1 rounded"
+                                title="Download file"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
