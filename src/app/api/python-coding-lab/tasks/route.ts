@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { PythonTaskDifficulty } from '@prisma/client';
 
 /**
  * GET /api/python-coding-lab/tasks
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     const tasks = await prisma.pythonCodingTask.findMany({
       where: {
         isActive: true,
-        ...(difficulty && { difficulty: difficulty as any }),
+        ...(difficulty && { difficulty: difficulty as PythonTaskDifficulty }),
         ...(category && { category }),
       },
       include: {

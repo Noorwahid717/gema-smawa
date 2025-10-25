@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { PythonSubmissionStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { 
   LANGUAGE_IDS, 
-  runTestCases, 
-  mapJudge0StatusToSubmissionStatus 
+  runTestCases
 } from '@/lib/judge0';
 
 /**
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
       const score = Math.round((passedTests / totalTests) * task.points);
 
       // Determine overall status
-      let overallStatus = 'COMPLETED';
+      let overallStatus: PythonSubmissionStatus = 'COMPLETED';
       const hasErrors = testResults.some(r => r.error && r.error.includes('error'));
       const hasTimeout = testResults.some(r => r.error && r.error.includes('time'));
 
@@ -108,11 +109,11 @@ export async function POST(request: NextRequest) {
       const updatedSubmission = await prisma.pythonSubmission.update({
         where: { id: submission.id },
         data: {
-          status: overallStatus as any,
+          status: overallStatus,
           score,
           totalTests,
           passedTests,
-          testResults: testResults as any,
+          testResults: testResults as unknown as Prisma.InputJsonValue,
           completedAt: new Date(),
           stdout: testResults[0]?.actualOutput || null,
           stderr: testResults.find(r => r.error)?.error || null,
