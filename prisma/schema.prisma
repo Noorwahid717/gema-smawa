@@ -425,6 +425,7 @@ model Student {
   ArticleFeedback     ArticleFeedback[]
   webLabSubmissions   WebLabSubmission[]
   codingSubmissions   CodingSubmission[]
+  pythonSubmissions   PythonSubmission[]  @relation("PythonSubmissions")
 
   @@index([studentId])
   @@index([status])
@@ -729,4 +730,106 @@ model CodingEvaluation {
 
   @@index([evaluatedBy])
   @@map("coding_evaluations")
+}
+
+// ===== PYTHON CODING LAB MODELS (Judge0 Integration) =====
+
+enum PythonTaskDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum PythonSubmissionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RUNTIME_ERROR
+  COMPILATION_ERROR
+  TIME_LIMIT_EXCEEDED
+}
+
+model PythonCodingTask {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  difficulty  PythonTaskDifficulty @default(EASY)
+  category    String   @default("general") // general, algorithm, data-structure, etc.
+  tags        String?  // JSON array of tags
+  starterCode String   @default("# Write your Python code here\n\ndef solution():\n    pass\n\n# Test your solution\nif __name__ == \"__main__\":\n    print(solution())")
+  solutionCode String? // Solution code for reference
+  hints       Json?    // Array of hints
+  timeLimit   Int      @default(5)    // seconds
+  memoryLimit Int      @default(128)  // MB
+  points      Int      @default(100)
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  testCases   PythonTestCase[]
+  submissions PythonSubmission[]
+
+  @@index([difficulty])
+  @@index([category])
+  @@index([isActive])
+  @@index([order])
+  @@map("python_coding_tasks")
+}
+
+model PythonTestCase {
+  id            String   @id @default(cuid())
+  taskId        String
+  name          String   // Test case name/description
+  input         String   // Input for the test
+  expectedOutput String  // Expected output
+  isHidden      Boolean  @default(false) // Hidden test cases for validation
+  points        Int      @default(10)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  // Relations
+  task PythonCodingTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([order])
+  @@map("python_test_cases")
+}
+
+model PythonSubmission {
+  id              String   @id @default(cuid())
+  taskId          String
+  studentId       String
+  code            String
+  language        String   @default("python") // python, python3
+  status          PythonSubmissionStatus @default(PENDING)
+  judge0Token     String?  // Judge0 submission token
+  stdout          String?  // Program output
+  stderr          String?  // Error output
+  compileOutput   String?  // Compilation output
+  message         String?  // Judge0 status message
+  time            Float?   // Execution time in seconds
+  memory          Int?     // Memory used in KB
+  score           Int      @default(0) // Score based on passed test cases
+  totalTests      Int      @default(0)
+  passedTests     Int      @default(0)
+  testResults     Json?    // Detailed test results
+  submittedAt     DateTime @default(now())
+  completedAt     DateTime?
+  attempts        Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  task    PythonCodingTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  student Student          @relation("PythonSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([studentId])
+  @@index([status])
+  @@index([submittedAt])
+  @@map("python_submissions")
 }

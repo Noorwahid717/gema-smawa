@@ -197,6 +197,211 @@ async function main() {
 
   console.log('✅ Created system settings')
 
+  // Create Python Coding Lab tasks
+  console.log('🐍 Creating Python Coding Lab tasks...')
+  
+  // Task 1: Hello World
+  const task1 = await prisma.pythonCodingTask.upsert({
+    where: { slug: 'hello-world-python' },
+    update: {},
+    create: {
+      title: 'Hello World',
+      slug: 'hello-world-python',
+      description: `Tugas pertamamu adalah membuat program Python sederhana yang mencetak "Hello, World!" ke layar.
+
+Ini adalah tugas dasar untuk memulai perjalanan programming Python kamu!`,
+      difficulty: 'EASY',
+      category: 'general',
+      tags: '["beginner", "introduction", "basics"]',
+      starterCode: `# Write your Python code here
+def hello_world():
+    # TODO: Return "Hello, World!"
+    pass
+
+# Test your solution
+if __name__ == "__main__":
+    result = hello_world()
+    print(result)`,
+      solutionCode: `def hello_world():
+    return "Hello, World!"
+
+if __name__ == "__main__":
+    result = hello_world()
+    print(result)`,
+      hints: JSON.parse('["Gunakan fungsi return untuk mengembalikan string", "String di Python bisa menggunakan petik satu atau petik dua", "Pastikan ejaan dan kapitalisasi tepat!"]'),
+      timeLimit: 2,
+      memoryLimit: 128,
+      points: 100,
+      order: 1,
+      isActive: true,
+    },
+  })
+
+  await prisma.pythonTestCase.create({
+    data: {
+      taskId: task1.id,
+      name: 'Test Case 1: Basic Output',
+      input: '',
+      expectedOutput: 'Hello, World!',
+      isHidden: false,
+      points: 100,
+      order: 1,
+    },
+  })
+
+  // Task 2: Penjumlahan Dua Bilangan
+  const task2 = await prisma.pythonCodingTask.upsert({
+    where: { slug: 'penjumlahan-dua-bilangan' },
+    update: {},
+    create: {
+      title: 'Penjumlahan Dua Bilangan',
+      slug: 'penjumlahan-dua-bilangan',
+      description: `Buatlah fungsi yang menerima dua bilangan sebagai parameter dan mengembalikan hasil penjumlahannya.
+
+Contoh:
+- Input: 5, 3 → Output: 8
+- Input: -2, 7 → Output: 5`,
+      difficulty: 'EASY',
+      category: 'math',
+      tags: '["math", "basic", "arithmetic"]',
+      starterCode: `def add_numbers(a, b):
+    # TODO: Return the sum of a and b
+    pass
+
+# Test your solution
+if __name__ == "__main__":
+    print(add_numbers(5, 3))
+    print(add_numbers(-2, 7))`,
+      solutionCode: `def add_numbers(a, b):
+    return a + b
+
+if __name__ == "__main__":
+    print(add_numbers(5, 3))
+    print(add_numbers(-2, 7))`,
+      hints: JSON.parse('["Gunakan operator + untuk penjumlahan", "Fungsi harus return hasilnya, bukan print", "Python otomatis menangani bilangan negatif"]'),
+      timeLimit: 2,
+      memoryLimit: 128,
+      points: 100,
+      order: 2,
+      isActive: true,
+    },
+  })
+
+  await prisma.pythonTestCase.createMany({
+    data: [
+      {
+        taskId: task2.id,
+        name: 'Test Case 1: Bilangan Positif',
+        input: '',
+        expectedOutput: '8',
+        isHidden: false,
+        points: 50,
+        order: 1,
+      },
+      {
+        taskId: task2.id,
+        name: 'Test Case 2: Bilangan Negatif',
+        input: '',
+        expectedOutput: '5',
+        isHidden: false,
+        points: 50,
+        order: 2,
+      },
+    ],
+  })
+
+  // Task 3: FizzBuzz
+  const task3 = await prisma.pythonCodingTask.upsert({
+    where: { slug: 'fizzbuzz' },
+    update: {},
+    create: {
+      title: 'FizzBuzz',
+      slug: 'fizzbuzz',
+      description: `Buatlah fungsi FizzBuzz yang menerima sebuah bilangan n dan mengembalikan:
+- "Fizz" jika n habis dibagi 3
+- "Buzz" jika n habis dibagi 5
+- "FizzBuzz" jika n habis dibagi 3 dan 5
+- String dari bilangan tersebut jika tidak memenuhi kondisi di atas
+
+Contoh:
+- Input: 3 → Output: "Fizz"
+- Input: 5 → Output: "Buzz"
+- Input: 15 → Output: "FizzBuzz"
+- Input: 7 → Output: "7"`,
+      difficulty: 'MEDIUM',
+      category: 'algorithm',
+      tags: '["logic", "conditional", "modulo"]',
+      starterCode: `def fizzbuzz(n):
+    # TODO: Implement FizzBuzz logic
+    pass
+
+# Test your solution
+if __name__ == "__main__":
+    print(fizzbuzz(3))
+    print(fizzbuzz(5))
+    print(fizzbuzz(15))
+    print(fizzbuzz(7))`,
+      solutionCode: `def fizzbuzz(n):
+    if n % 3 == 0 and n % 5 == 0:
+        return "FizzBuzz"
+    elif n % 3 == 0:
+        return "Fizz"
+    elif n % 5 == 0:
+        return "Buzz"
+    else:
+        return str(n)`,
+      hints: JSON.parse('["Gunakan operator modulo (%) untuk cek habis dibagi", "Cek kondisi FizzBuzz terlebih dahulu", "Jangan lupa convert angka ke string untuk return"]'),
+      timeLimit: 3,
+      memoryLimit: 128,
+      points: 150,
+      order: 3,
+      isActive: true,
+    },
+  })
+
+  await prisma.pythonTestCase.createMany({
+    data: [
+      {
+        taskId: task3.id,
+        name: 'Test Case 1: Fizz',
+        input: '',
+        expectedOutput: 'Fizz',
+        isHidden: false,
+        points: 37,
+        order: 1,
+      },
+      {
+        taskId: task3.id,
+        name: 'Test Case 2: Buzz',
+        input: '',
+        expectedOutput: 'Buzz',
+        isHidden: false,
+        points: 37,
+        order: 2,
+      },
+      {
+        taskId: task3.id,
+        name: 'Test Case 3: FizzBuzz',
+        input: '',
+        expectedOutput: 'FizzBuzz',
+        isHidden: false,
+        points: 38,
+        order: 3,
+      },
+      {
+        taskId: task3.id,
+        name: 'Test Case 4: Number',
+        input: '',
+        expectedOutput: '7',
+        isHidden: false,
+        points: 38,
+        order: 4,
+      },
+    ],
+  })
+
+  console.log('✅ Created 3 Python Coding Lab tasks with test cases')
+
   console.log('🎉 Database seed completed successfully!')
   console.log('')
   console.log('📊 Summary:')
@@ -205,6 +410,7 @@ async function main() {
   console.log('- 3 Announcements created')
   console.log('- 4 Activities created')
   console.log('- 4 Gallery items created')
+  console.log('- 3 Python Coding Lab tasks created')
   console.log('- System settings configured')
   console.log('')
   console.log('🔐 Admin Credentials:')
@@ -214,6 +420,10 @@ async function main() {
   console.log('👨‍🎓 Student Credentials:')
   console.log('All students: [studentId]@students.smawahidiyah.edu / student123')
   console.log('Example: 2025001@students.smawahidiyah.edu / student123')
+  console.log('')
+  console.log('🐍 Python Coding Lab:')
+  console.log('Access at: /student/python-coding-lab')
+  console.log('3 sample tasks available (Easy, Medium difficulty)')
 }
 
 main()
