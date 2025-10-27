@@ -18,9 +18,11 @@ import {
   Target,
   Users
 } from "lucide-react";
-import promptData from "@/data/prompts/webPortfolioSma.json";
+import fallbackPromptData from "@/data/prompts/webPortfolioSma.json";
+import type { PromptSchema, PromptSection } from "@/types/prompt";
 
-type PromptSection = (typeof promptData.sections)[number];
+const SCHEMA_ID = "webPortfolioSma";
+const FALLBACK_SCHEMA = fallbackPromptData as PromptSchema;
 type TabMode = "ringkas" | "lengkap" | "guru";
 
 interface ChecklistState {
@@ -40,10 +42,48 @@ const fadeMotion: MotionProps = {
 };
 
 export default function PromptWorkspace() {
-  const sections = useMemo<PromptSection[]>(() => promptData.sections, []);
+  const [schema, setSchema] = useState<PromptSchema>(FALLBACK_SCHEMA);
+  const sections = useMemo<PromptSection[]>(() => schema.sections, [schema]);
   const [activeTab, setActiveTab] = useState<TabMode>("ringkas");
   const [checklists, setChecklists] = useState<ChecklistState>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+
+    const fetchSchema = async () => {
+      try {
+        const res = await fetch(`/api/prompts/${SCHEMA_ID}`, { signal: controller.signal });
+        if (!res.ok) {
+          const message = await res.text();
+          throw new Error(message || "Gagal memuat prompt");
+        }
+        const body = (await res.json()) as { data?: PromptSchema };
+        if (body?.data && mounted) {
+          setSchema(body.data);
+          setError(null);
+        }
+      } catch (err) {
+        if (!mounted) return;
+        console.error("Failed to fetch prompt schema", err);
+        setError("Gagal memuat data terbaru. Menampilkan versi terakhir.");
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchSchema();
+
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -381,6 +421,15 @@ export default function PromptWorkspace() {
         <p className="text-xs font-medium uppercase tracking-wide text-blue-500">
           Mode aktif: {tabs.find((tab) => tab.id === activeTab)?.description}
         </p>
+        {(isLoading || error) && (
+          <p
+            className={`text-xs font-medium ${
+              error ? "text-red-600" : "text-slate-400"
+            }`}
+          >
+            {error ?? "Memuat data prompt terbaru..."}
+          </p>
+        )}
       </header>
 
       <div className="mt-6 space-y-4">
