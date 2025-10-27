@@ -1,9 +1,19 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { BookOpen, Code, FileText, ArrowRight, Clock, User, Newspaper, Lightbulb, MessageSquare, HelpCircle, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { studentAuth, type StudentSession } from "@/lib/student-auth";
+
+const PromptWorkspace = dynamic(() => import("@/components/tutorial/PromptWorkspace"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-2xl border border-blue-100 bg-white/80 p-8 text-center text-slate-500 shadow-sm">
+      Memuat prompt interaktif...
+    </div>
+  ),
+});
 
 interface Article {
   id: string;
@@ -235,14 +245,8 @@ export default function TutorialPage() {
         )}
 
         {activeTab === 'prompt' && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div className="col-span-full bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
-              <Lightbulb className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Prompt Project Segera Hadir</h2>
-              <p className="text-gray-600">
-                Ide-ide project menarik dan tantangan coding akan segera tersedia.
-              </p>
-            </div>
+          <div className="space-y-6">
+            <PromptWorkspace />
           </div>
         )}
 

@@ -1,0 +1,263 @@
+{
+  "schemaId": "webPortfolioSma",
+  "sections": [
+    {
+      "title": "Bagian 1 • Mendeteksi Keunikan Diri",
+      "meta": {
+        "id": "web-portfolio-sma-b1",
+        "titleShort": "Pemetaan Persona",
+        "level": "Menengah",
+        "durasiMenit": 25,
+        "prasyarat": [
+          "Pernah membuat biodata sederhana di HTML",
+          "Mengenal dasar copywriting satu paragraf"
+        ],
+        "tujuanPembelajaran": [
+          "Menyusun persona dan nilai jual diri sebelum membuat portofolio",
+          "Menghubungkan pengalaman sekolah dengan kebutuhan audiens"
+        ],
+        "tag": [
+          "perencanaan",
+          "ux copy",
+          "literasi digital"
+        ],
+        "assets": {
+          "starterZip": "/assets/prompts/web-portfolio/persona-starter.zip",
+          "gambarContoh": "/assets/prompts/web-portfolio/persona-board.png"
+        },
+        "versi": "1.0.0",
+        "terakhirDiperbarui": "2025-02-18"
+      },
+      "role": {
+        "deskripsi": "Kamu berperan sebagai siswa kreatif yang sedang menyiapkan portofolio online untuk seleksi magang.",
+        "fokus": "Temukan karakter dan capaian yang paling mewakili dirimu."
+      },
+      "task": {
+        "tujuan": [
+          "Merangkum biodata, minat, dan bukti karya terbaik",
+          "Menentukan audiens utama portofolio"
+        ],
+        "instruksi": "Gunakan template persona untuk menulis ringkasan diri dan pilih tiga pengalaman yang paling berdampak."
+      },
+      "context": {
+        "situasi": [
+          "Sekolah akan mengadakan pameran karya digital tiga minggu lagi",
+          "Guru pembimbing meminta setiap siswa menyiapkan portofolio daring",
+          "Kamu masih bingung bagian mana yang harus ditonjolkan"
+        ]
+      },
+      "reasoning": {
+        "prinsip": "Portofolio yang kuat selalu dimulai dari memahami audiens dan nilai unik pembuatnya.",
+        "strukturDasar": {
+          "observasi": "Catat minat, organisasi, dan proyek yang pernah kamu ikuti.",
+          "analisis": "Kelompokkan capaian yang selaras dengan kebutuhan audiens utama.",
+          "keputusan": "Pilih kombinasi profil singkat, kutipan testimoni, dan visual utama."
+        },
+        "strategi": [
+          "Gunakan matrix 2x2 untuk menilai dampak vs kebanggaan tiap pengalaman.",
+          "Tulis kalimat pembuka yang langsung menyebut keahlian utama.",
+          "Sisipkan angka atau fakta singkat agar terasa objektif."
+        ]
+      },
+      "output": {
+        "bentuk": [
+          "Persona sheet satu halaman",
+          "Ringkasan hero section berisi judul, subjudul, dan CTA"
+        ],
+        "tugasSiswa": "Isi template persona dan tulis hero copy maksimum 60 kata."
+      },
+      "stop": {
+        "kriteria": [
+          "Hero copy telah selesai dan jelas menyebut audiens",
+          "Tiga pengalaman unggulan sudah dipilih dengan alasan singkat",
+          "Persona sheet diunggah ke folder proyek"
+        ]
+      },
+      "tips": {
+        "aksesibilitas": [
+          "Gunakan kontras warna minimal 4.5:1 saat membuat hero section",
+          "Pastikan teks hero dapat dibaca screen reader tanpa istilah slang"
+        ],
+        "kesalahanUmum": [
+          "Menuliskan semua pengalaman tanpa prioritas",
+          "Menggunakan jargon teknis yang tidak dipahami audiens"
+        ],
+        "tantangan": [
+          "Bandingkan persona diri dengan teman dan minta feedback silang"
+        ]
+      }
+    },
+    {
+      "title": "Bagian 2 • Mendesain Halaman Utama",
+      "meta": {
+        "id": "web-portfolio-sma-b2",
+        "titleShort": "Layout & Visual",
+        "level": "Menengah",
+        "durasiMenit": 35,
+        "prasyarat": [
+          "Menguasai struktur dasar HTML5",
+          "Mampu menggunakan Flexbox atau Grid sederhana"
+        ],
+        "tujuanPembelajaran": [
+          "Membuat layout portofolio yang rapi dan mudah dinavigasi",
+          "Menerapkan prinsip hierarki visual untuk konten utama"
+        ],
+        "tag": [
+          "front-end dasar",
+          "desain visual",
+          "responsif"
+        ],
+        "assets": {
+          "starterZip": "/assets/prompts/web-portfolio/landing-wireframe.zip",
+          "gambarContoh": "/assets/prompts/web-portfolio/landing-preview.png"
+        },
+        "versi": "1.0.0",
+        "terakhirDiperbarui": "2025-02-18"
+      },
+      "role": {
+        "deskripsi": "Sekarang kamu bertugas sebagai web designer muda yang menerjemahkan persona menjadi layout nyata.",
+        "fokus": "Susun struktur portofolio yang responsif dan nyaman dibaca."
+      },
+      "task": {
+        "tujuan": [
+          "Membuat hero, showcase proyek, dan bagian testimoni",
+          "Menyiapkan navigasi sederhana yang tetap terlihat di mobile"
+        ],
+        "instruksi": "Duplikat file starter, atur grid dasar, dan isi setiap section sesuai data di persona sheet."
+      },
+      "context": {
+        "situasi": [
+          "Template disediakan dalam format HTML dan CSS dasar",
+          "Kamu bekerja berpasangan sehingga perlu struktur yang mudah diedit",
+          "Guru meminta tampilan mobile dan desktop diuji di kelas"
+        ]
+      },
+      "reasoning": {
+        "prinsip": "Layout yang efektif menuntun mata pengunjung dari informasi utama ke bukti keahlian tanpa hambatan.",
+        "strukturDasar": {
+          "kerangka": "Gunakan header sticky dengan navigasi anchor.",
+          "kontenUtama": "Tampilkan tiga proyek pilihan dengan kartu seragam.",
+          "pembuktian": "Tambahkan testimoni atau data prestasi dalam blok kontras."
+        },
+        "strategi": [
+          "Gunakan skala tipografi modular agar judul dan isi selaras.",
+          "Pakai CSS clamp untuk ukuran teks responsif.",
+          "Manfaatkan utility Tailwind atau class custom agar konsisten."
+        ]
+      },
+      "output": {
+        "bentuk": [
+          "Halaman landing portofolio siap uji",
+          "Checklist fitur visual dan responsif"
+        ],
+        "tugasSiswa": "Sunting file starter hingga layout lengkap dan checklist minimal 80% terpenuhi."
+      },
+      "stop": {
+        "kriteria": [
+          "Halaman tampil rapih di viewport 360px dan 1280px",
+          "Navigasi scroll lancar dan anchor bekerja",
+          "Setiap kartu proyek memiliki tombol atau tautan aksi"
+        ]
+      },
+      "tips": {
+        "aksesibilitas": [
+          "Gunakan heading bertingkat h1-h3 secara berurutan",
+          "Pastikan tombol dapat dikendalikan dengan keyboard"
+        ],
+        "kesalahanUmum": [
+          "Mengatur jarak antar elemen hanya dengan margin besar",
+          "Melupakan spacing antar paragraf sehingga teks sulit dibaca"
+        ],
+        "tantangan": [
+          "Coba tambahkan dark mode switch dengan CSS variables"
+        ]
+      }
+    },
+    {
+      "title": "Bagian 3 • Menambah Interaksi & Evaluasi",
+      "meta": {
+        "id": "web-portfolio-sma-b3",
+        "titleShort": "Interaksi & Optimasi",
+        "level": "Lanjutan Ringan",
+        "durasiMenit": 40,
+        "prasyarat": [
+          "Menguasai JavaScript DOM dasar",
+          "Pernah menggunakan localStorage untuk menyimpan data kecil"
+        ],
+        "tujuanPembelajaran": [
+          "Menghadirkan interaksi sederhana yang relevan dengan audiens",
+          "Mengevaluasi pengalaman pengguna menggunakan checklist"
+        ],
+        "tag": [
+          "javascript",
+          "ux testing",
+          "optimasi"
+        ],
+        "assets": {
+          "starterZip": "/assets/prompts/web-portfolio/interaction-kit.zip",
+          "gambarContoh": "/assets/prompts/web-portfolio/interaction-demo.gif"
+        },
+        "versi": "1.0.0",
+        "terakhirDiperbarui": "2025-02-18"
+      },
+      "role": {
+        "deskripsi": "Kamu menjadi front-end developer yang menambahkan interaksi ramah pengguna dan analitik sederhana.",
+        "fokus": "Bangun fitur micro-interaction dan ukur efektivitas halaman."
+      },
+      "task": {
+        "tujuan": [
+          "Menambahkan animasi masuk halus untuk setiap section",
+          "Menyediakan tombol download portofolio dan form kontak singkat"
+        ],
+        "instruksi": "Gunakan starter JS untuk membuat animasi fade-in, simpan status checklist ke localStorage, lalu lakukan uji coba cepat."
+      },
+      "context": {
+        "situasi": [
+          "Kamu mendapat masukan bahwa halaman terasa statis",
+          "Sekolah ingin melihat data berapa kali portofolio diunduh",
+          "Waktu demo tinggal satu sesi kelas"
+        ]
+      },
+      "reasoning": {
+        "prinsip": "Interaksi kecil yang relevan bisa meningkatkan keterlibatan tanpa mengganggu performa.",
+        "strukturDasar": {
+          "inisialisasi": "Inisialisasi observer animasi atau gunakan library ringan.",
+          "interaksi": "Sambungkan tombol aksi ke fungsi penyimpanan dan pelacakan.",
+          "evaluasi": "Catat hasil checklist dan insight uji coba di log sederhana."
+        },
+        "strategi": [
+          "Gunakan IntersectionObserver untuk memicu animasi hanya saat dibutuhkan.",
+          "Simpan jumlah unduhan ke localStorage sebelum menghubungkan dengan analitik real.",
+          "Sediakan form feedback 3 pertanyaan untuk penguji."
+        ]
+      },
+      "output": {
+        "bentuk": [
+          "Halaman portofolio interaktif dengan animasi dan tombol aksi",
+          "Laporan mini hasil uji coba satu paragraf"
+        ],
+        "tugasSiswa": "Implementasikan skrip interaksi dan tulis ringkasan hasil uji coba menggunakan template laporan."
+      },
+      "stop": {
+        "kriteria": [
+          "Animasi section aktif tanpa lag pada perangkat sekolah",
+          "Tombol download dan form kontak sukses dijalankan",
+          "Checklist evaluasi tersimpan dan dapat dimuat ulang"
+        ]
+      },
+      "tips": {
+        "aksesibilitas": [
+          "Sediakan opsi matikan animasi jika prefers-reduced-motion aktif",
+          "Gunakan label jelas dan placeholder informatif pada form"
+        ],
+        "kesalahanUmum": [
+          "Menjalankan animasi di setiap scroll sehingga performa menurun",
+          "Mengabaikan validasi sederhana pada form kontak"
+        ],
+        "tantangan": [
+          "Integrasikan service worker ringan untuk mode offline portofolio"
+        ]
+      }
+    }
+  ]
+}

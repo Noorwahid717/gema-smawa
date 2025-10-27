@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins, Fira_Code } from "next/font/google";
-import { AppSessionProvider } from "@/components/providers/AppSessionProvider";
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
-import PageTransition from "@/components/ui/PageTransition";
+import { Providers } from "./providers";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -89,11 +87,7 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${firaCode.variable} antialiased`}
       >
-        <ThemeProvider>
-          <AppSessionProvider>
-            <PageTransition>{children}</PageTransition>
-          </AppSessionProvider>
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
